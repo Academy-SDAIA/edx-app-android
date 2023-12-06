@@ -4,8 +4,8 @@ import android.app.Activity;
 
 import androidx.annotation.NonNull;
 
+import org.edx.mobile.base.MainApplication;
 import org.edx.mobile.logger.Logger;
-import org.edx.mobile.module.prefs.LoginPrefs;
 import org.edx.mobile.util.Config;
 import org.edx.mobile.view.Router;
 
@@ -16,11 +16,11 @@ public class DeepLinkManager {
     protected static final Logger logger = new Logger(DeepLinkManager.class);
 
     public static void onDeepLinkReceived(@NonNull Activity activity, @NonNull final DeepLink deepLink) {
-        logger.debug("DeepLinkManager received DeepLink with data:\n" + deepLink.toString());
+        logger.debug("DeepLinkManager received DeepLink with data:\n" + deepLink);
         // Pass the Config class instance as parameter while manually creating the Router object instated of
         // using injection technique. Otherwise Router unable to initiate the config object in it.
         final Router router = new Router(new Config(activity));
-        final boolean isUserLoggedIn = new LoginPrefs(activity).isUserLoggedIn();
+        final boolean isUserLoggedIn = MainApplication.getEnvironment(activity).getLoginPrefs().isUserLoggedIn();
         @ScreenDef final String screenName = deepLink.getScreenName();
         if (!isUserLoggedIn) {
             switch (screenName) {
@@ -52,19 +52,16 @@ public class DeepLinkManager {
             case Screen.DISCUSSION_TOPIC:
             case Screen.COURSE_COMPONENT: {
                 router.showCourseDashboardTabs(activity, null, deepLink.getCourseId(), deepLink.getComponentId(),
-                        deepLink.getTopicId(), deepLink.getThreadId(), false, screenName);
+                        deepLink.getTopicId(), deepLink.getThreadId(), screenName);
                 break;
             }
+            case Screen.PROFILE:
+            case Screen.USER_PROFILE:
             case Screen.PROGRAM:
             case Screen.DISCOVERY:
             case Screen.DISCOVERY_COURSE_DETAIL:
             case Screen.DISCOVERY_PROGRAM_DETAIL: {
                 router.showMainDashboard(activity, screenName, deepLink.getPathId());
-                break;
-            }
-            case Screen.PROFILE:
-            case Screen.USER_PROFILE: {
-                router.showAccountActivity(activity, screenName);
                 break;
             }
             default: {

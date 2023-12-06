@@ -24,10 +24,8 @@ import org.edx.mobile.module.db.impl.DatabaseFactory;
 import org.edx.mobile.module.download.IDownloadManager;
 import org.edx.mobile.module.prefs.LoginPrefs;
 import org.edx.mobile.module.prefs.UserPrefs;
-import org.edx.mobile.module.prefs.VideoPrefs;
 import org.edx.mobile.util.Config;
 import org.edx.mobile.util.FileUtil;
-import org.edx.mobile.util.NetworkUtil;
 import org.edx.mobile.util.Sha1Util;
 import org.edx.mobile.view.BulkDownloadFragment;
 import org.greenrobot.eventbus.EventBus;
@@ -54,7 +52,7 @@ public class Storage implements IStorage {
     IDownloadManager dm;
 
     @Inject
-    UserPrefs pref;
+    UserPrefs userPrefs;
 
     @Inject
     Config config;
@@ -64,9 +62,6 @@ public class Storage implements IStorage {
 
     @Inject
     CourseAPI api;
-
-    @Inject
-    VideoPrefs videoPrefs;
 
     // To remove the dependency cycle.
     // ref: https://www.reddit.com/r/android_devs/comments/hc6dea/comment/fvffemo/?utm_source=share&utm_medium=web2x&context=3
@@ -95,12 +90,7 @@ public class Storage implements IStorage {
         //IVideoModel videoById = db.getVideoEntryByVideoId(model.getVideoId(), null);
 
         if (videoByUrl == null || videoByUrl.getDmId() < 0) {
-            boolean downloadPreference = pref.isDownloadOverWifiOnly();
-            if(NetworkUtil.isOnZeroRatedNetwork(context, config)){
-                //If the device has zero rated network, then allow downloading
-                //on mobile network even if user has "Only on wifi" settings as ON
-                downloadPreference = false;
-            }
+            boolean downloadPreference = userPrefs.isDownloadOverWifiOnly();
 
             // Fail the download if download directory isn't available
             final File downloadDirectory = FileUtil.getDownloadDirectory(context, environment.get());
@@ -158,7 +148,7 @@ public class Storage implements IStorage {
         // anyways, we mark the video as DELETED
         int videosDeleted = db.deleteVideoByVideoId(model, null);
         // Reset the state of Videos Bulk Download view whenever a delete happens
-        videoPrefs.setBulkDownloadSwitchState(BulkDownloadFragment.SwitchState.DEFAULT, model.getEnrollmentId());
+        userPrefs.setBulkDownloadSwitchState(BulkDownloadFragment.SwitchState.DEFAULT, model.getEnrollmentId());
         EventBus.getDefault().post(new DownloadedVideoDeletedEvent());
         return videosDeleted;
     }
@@ -278,30 +268,6 @@ public class Storage implements IStorage {
         }
     }
 
-
-    @Override
-    public void getAverageDownloadProgress(final DataCallback<Integer> callback) {
-        IDatabase db = DatabaseFactory.getInstance( DatabaseFactory.TYPE_DATABASE_NATIVE );
-        db.getListOfOngoingDownloads(new DataCallback<List<VideoModel>>() {
-
-            @Override
-            public void onResult(List<VideoModel> result) {
-                long[] dmids = new long[result.size()];
-                for (int i=0; i< result.size(); i++) {
-                    dmids[i] = result.get(i).getDmId();
-                }
-
-                int averageProgress = dm.getAverageProgressForDownloads(dmids);
-                callback.onResult(averageProgress);
-            }
-
-            @Override
-            public void onFail(Exception ex) {
-                callback.onFail(ex);
-            }
-        });
-    }
-
     @Override
     public void getDownloadProgressOfCourseVideos(@Nullable String courseId,
                                                   final DataCallback<NativeDownloadModel> callback) {
@@ -384,7 +350,7 @@ public class Storage implements IStorage {
             return video;
         }
 
-        return DatabaseModelFactory.getModel(block.getData(), block);
+        return DatabaseModelFactory.getModel(block.getData(), block, userPrefs.getVideoQuality());
     }
 
     @Override

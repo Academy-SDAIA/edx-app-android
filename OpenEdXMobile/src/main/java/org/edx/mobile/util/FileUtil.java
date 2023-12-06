@@ -2,18 +2,18 @@ package org.edx.mobile.util;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Environment;
+import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
-import androidx.fragment.app.FragmentActivity;
 
-import org.edx.mobile.R;
 import org.edx.mobile.core.IEdxEnvironment;
 import org.edx.mobile.logger.Logger;
 import org.edx.mobile.model.VideoModel;
@@ -34,7 +34,6 @@ public class FileUtil {
     protected static final Logger logger = new Logger(FileUtil.class.getName());
 
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
-    public static final int FILE_CHOOSER_RESULT_CODE = 0x001;
 
     // Make this class non-instantiable
     private FileUtil() {
@@ -102,9 +101,8 @@ public class FileUtil {
             downloadDir = getExternalAppDir(context);
         }
 
-        final ProfileModel profile = userPref.getProfile();
         if (downloadDir != null && environment.getLoginPrefs().isUserLoggedIn()) {
-            final File usersVideosDir = getUserVideoDirectory(downloadDir, profile.username);
+            final File usersVideosDir = getUserVideoDirectory(downloadDir, environment.getLoginPrefs().getUsername());
             usersVideosDir.mkdirs();
             try {
                 final File noMediaFile = new File(usersVideosDir, ".nomedia");
@@ -260,7 +258,9 @@ public class FileUtil {
      * @param filepath Video storage file path
      * @return True if video file exists on a given path
      */
-    public static boolean isVideoFileExists(@NonNull Context context, @NonNull String filepath) {
+    public static boolean isVideoFileExists(@NonNull Context context, @Nullable String filepath) {
+        if (TextUtils.isEmpty(filepath))
+            return false;
         final File videoFile = new File(filepath);
         if (videoFile.exists()) {
             // Inspiration of this solution has taken from the following answer
@@ -282,15 +282,17 @@ public class FileUtil {
     }
 
     /**
-     * Method to initiate the file selector with given supported file extensions.
+     * Creates an Intent to pick files with specified extensions.
+     *
+     * @param acceptTypes An array of MIME types to filter file selection.
+     * @return An Intent for the file picker activity.
      */
-    public static void chooseFiles(FragmentActivity activity, String[] acceptTypes) {
+    public static Intent getChooseFilesIntent(String[] acceptTypes) {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("*/*");
         intent.putExtra(Intent.EXTRA_MIME_TYPES, getSupportedFileMimeType(acceptTypes));
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        activity.startActivityForResult(Intent.createChooser(intent, activity.getString(R.string.choose_file_title)),
-                FILE_CHOOSER_RESULT_CODE);
+        return intent;
     }
 
     /**
@@ -313,5 +315,23 @@ public class FileUtil {
             }
         }
         return Arrays.copyOf(mimeTypes.toArray(), mimeTypes.size(), String[].class);
+    }
+
+    @Nullable
+    public static Uri getFileUriFromMediaStoreUri(@NonNull Context context, @NonNull Uri mediaUri) {
+        String[] projection = {MediaStore.Images.ImageColumns.DATA};
+
+        try (Cursor cursor = context.getContentResolver().query(mediaUri, projection, null, null, null)) {
+
+            if (cursor != null && cursor.moveToFirst() && cursor.getColumnCount() > 0) {
+                final String data = cursor.getString(0);
+                if (!TextUtils.isEmpty(data)) {
+                    return Uri.fromFile(new File(data));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

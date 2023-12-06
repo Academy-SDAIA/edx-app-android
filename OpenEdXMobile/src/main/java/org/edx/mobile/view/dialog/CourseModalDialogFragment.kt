@@ -7,7 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
-import com.android.billingclient.api.SkuDetails
+import com.android.billingclient.api.BillingClient.BillingResponseCode
+import com.android.billingclient.api.ProductDetails
 import dagger.hilt.android.AndroidEntryPoint
 import org.edx.mobile.R
 import org.edx.mobile.core.IEdxEnvironment
@@ -16,6 +17,7 @@ import org.edx.mobile.event.IAPFlowEvent
 import org.edx.mobile.exception.ErrorMessage
 import org.edx.mobile.extenstion.setVisibility
 import org.edx.mobile.http.HttpStatus
+import org.edx.mobile.inapppurchases.getPriceAmount
 import org.edx.mobile.model.iap.IAPFlowData
 import org.edx.mobile.module.analytics.Analytics
 import org.edx.mobile.module.analytics.Analytics.Events
@@ -88,7 +90,7 @@ class CourseModalDialogFragment : DialogFragment() {
             arguments?.getString(KEY_COURSE_NAME)
         )
         val isPurchaseEnabled = courseSku.isNullOrEmpty().not() &&
-                environment.appFeaturesPrefs.isIAPEnabled(environment.loginPrefs.isOddUserId)
+                environment.featuresPrefs.isIAPEnabledForUser(environment.loginPrefs.isOddUserId)
 
         binding.layoutUpgradeBtn.root.setVisibility(isPurchaseEnabled)
         binding.dialogDismiss.setOnClickListener {
@@ -121,22 +123,22 @@ class CourseModalDialogFragment : DialogFragment() {
             mapOf(Pair(KEY_SCREEN_NAME, screenName))
         )
         var experimentGroup: String? = null
-        if (environment.appFeaturesPrefs.isIAPExperimentEnabled()) {
+        if (environment.featuresPrefs.isIAPExperimentEnabled) {
             experimentGroup =
                 if (environment.loginPrefs.isOddUserId) Analytics.Values.TREATMENT else Analytics.Values.CONTROL
         }
         environment.analyticsRegistry.trackValuePropMessageViewed(
             courseId,
             screenName,
-            (courseSku.isNullOrEmpty().not() && environment.appFeaturesPrefs.isIAPEnabled()),
+            (courseSku.isNullOrEmpty().not() && environment.featuresPrefs.isIAPEnabled),
             experimentGroup,
             null
         )
     }
 
     private fun initIAPObservers() {
-        iapViewModel.productPrice.observe(viewLifecycleOwner, EventObserver { skuDetails ->
-            setUpUpgradeButton(skuDetails)
+        iapViewModel.productPrice.observe(viewLifecycleOwner, EventObserver {
+            setUpUpgradeButton(it)
         })
 
         iapViewModel.launchPurchaseFlow.observe(viewLifecycleOwner, EventObserver {
@@ -159,15 +161,15 @@ class CourseModalDialogFragment : DialogFragment() {
         })
     }
 
-    private fun setUpUpgradeButton(skuDetails: SkuDetails) {
+    private fun setUpUpgradeButton(productDetails: ProductDetails.OneTimePurchaseOfferDetails) {
         binding.layoutUpgradeBtn.btnUpgrade.text =
             ResourceUtil.getFormattedString(
                 resources,
                 R.string.label_upgrade_course_button,
                 AppConstants.PRICE,
-                skuDetails.price
+                productDetails.formattedPrice
             ).toString()
-        // The app get the sku details instantly, so add some wait to perform
+        // The app get the product details instantly, so add some wait to perform
         // animation at least one cycle.
         binding.layoutUpgradeBtn.shimmerViewContainer.postDelayed({
             binding.layoutUpgradeBtn.shimmerViewContainer.hideShimmer()
@@ -177,7 +179,11 @@ class CourseModalDialogFragment : DialogFragment() {
         binding.layoutUpgradeBtn.btnUpgrade.setOnClickListener {
             iapAnalytics.trackIAPEvent(eventName = Events.IAP_UPGRADE_NOW_CLICKED)
             courseSku?.let {
-                iapViewModel.startPurchaseFlow(it)
+                iapViewModel.startPurchaseFlow(
+                    it,
+                    productDetails.getPriceAmount(),
+                    productDetails.priceCurrencyCode,
+                )
             } ?: iapDialog.showPreUpgradeErrorDialog(this)
         }
     }
@@ -188,7 +194,7 @@ class CourseModalDialogFragment : DialogFragment() {
             retryListener = DialogInterface.OnClickListener { _, _ ->
                 // already purchased course.
                 iapViewModel.iapFlowData.isVerificationPending = false
-                iapViewModel.iapFlowData.flowType = IAPFlowData.IAPFlowType.USER_INITIATED
+                iapViewModel.iapFlowData.flowType = IAPFlowData.IAPFlowType.SILENT
                 EventBus.getDefault()
                     .post(
                         IAPFlowEvent(
@@ -198,6 +204,9 @@ class CourseModalDialogFragment : DialogFragment() {
                     )
                 dismiss()
             }
+        } else if (BillingResponseCode.USER_CANCELED == errorMessage.getHttpErrorCode()) {
+            iapAnalytics.trackIAPEvent(eventName = Events.IAP_PAYMENT_CANCELED)
+            return
         } else if (errorMessage.canRetry()) {
             retryListener = DialogInterface.OnClickListener { _, _ ->
                 when (errorMessage.requestType) {
@@ -208,8 +217,7 @@ class CourseModalDialogFragment : DialogFragment() {
             }
         }
         iapDialog.handleIAPException(
-            fragment =
-            this@CourseModalDialogFragment,
+            fragment = this@CourseModalDialogFragment,
             errorMessage = errorMessage,
             retryListener = retryListener
         )

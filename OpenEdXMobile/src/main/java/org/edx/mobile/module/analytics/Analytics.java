@@ -222,8 +222,10 @@ public interface Analytics {
 
     /**
      * This function is used to track if user clicks on Find Courses
+     *
+     * @param enrolledCoursesCount Count of Enrolled courses
      */
-    void trackUserFindsCourses();
+    void trackUserFindsCourses(int enrolledCoursesCount);
 
     /**
      * Track if user clicks on Create Account button on Registration screen.
@@ -671,6 +673,7 @@ public interface Analytics {
         String EMAIL_OPT_IN = "email_opt_in";
         String PROVIDER = "provider";
         String BLOCK_ID = "block_id";
+        String MINIFIED_BLOCK_ID = "minified_block_id";
         String BLOCK_TYPE = "block_type";
         String SUBSECTION_ID = "subsection_id";
         String UNIT_ID = "unit_id";
@@ -731,6 +734,7 @@ public interface Analytics {
         String ALERT_ACTION = "alert_action";
         String ERROR = "error";
         String ERROR_ACTION = "error_action";
+        String ENROLLED_COURSES_COUNT = "enrolled_courses_count";
     }
 
     interface Values {
@@ -923,6 +927,7 @@ public interface Analytics {
         String IAP_UNLOCK_UPGRADED_CONTENT_REFRESH_TIME = "edx.bi.app.payments.time_to_unlock_content_after_refresh";
         String IAP_PAYMENT_TIME = "edx.bi.app.payments.payment_time";
         String IAP_LOAD_PRICE_TIME = "edx.bi.app.payments.time_to_load_price";
+        String IAP_PAYMENT_CANCELED = "edx.bi.app.payments.canceled_by_user";
         String IAP_PAYMENT_ERROR = "edx.bi.app.payments.payment_error";
         String IAP_COURSE_UPGRADE_ERROR = "edx.bi.app.payments.course_upgrade_error";
         String IAP_PRICE_LOAD_ERROR = "edx.bi.app.payments.price_load_error";
@@ -1061,6 +1066,7 @@ public interface Analytics {
         String IAP_UNLOCK_UPGRADED_CONTENT_REFRESH_TIME = "Payments: Time to Unlock Upgraded Content After Refresh";
         String IAP_PAYMENT_TIME = "Payments: Payment Time";
         String IAP_LOAD_PRICE_TIME = "Payments: Time to Load Price";
+        String IAP_PAYMENT_CANCELED = "Payments: Canceled by User";
         String IAP_PAYMENT_ERROR = "Payments: Payment Error";
         String IAP_COURSE_UPGRADE_ERROR = "Payments: Course Upgrade Error";
         String IAP_PRICE_LOAD_ERROR = "Payments: Price Load Error";

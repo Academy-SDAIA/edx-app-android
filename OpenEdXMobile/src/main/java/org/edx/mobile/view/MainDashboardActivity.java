@@ -11,32 +11,39 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.snackbar.Snackbar;
 
 import org.edx.mobile.BuildConfig;
 import org.edx.mobile.R;
+import org.edx.mobile.databinding.ActivityMainDashboardBinding;
 import org.edx.mobile.deeplink.DeepLink;
 import org.edx.mobile.deeplink.ScreenDef;
 import org.edx.mobile.event.MainDashboardRefreshEvent;
 import org.edx.mobile.event.NewVersionAvailableEvent;
+import org.edx.mobile.http.notifications.SnackbarErrorNotification;
 import org.edx.mobile.module.notification.NotificationDelegate;
-import org.edx.mobile.module.prefs.PrefManager;
+import org.edx.mobile.module.prefs.InfoPrefs;
+import org.edx.mobile.module.prefs.LoginPrefs;
 import org.edx.mobile.util.AppConstants;
 import org.edx.mobile.util.AppStoreUtils;
 import org.edx.mobile.util.IntentFactory;
+import org.edx.mobile.util.ResourceUtil;
 import org.edx.mobile.util.Version;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
 import java.text.ParseException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.inject.Inject;
 
 import dagger.hilt.android.AndroidEntryPoint;
 
 @AndroidEntryPoint
-public class MainDashboardActivity extends OfflineSupportBaseActivity {
+public class MainDashboardActivity extends OfflineSupportBaseActivity<ActivityMainDashboardBinding> {
 
     @Inject
     NotificationDelegate notificationDelegate;
@@ -59,10 +66,22 @@ public class MainDashboardActivity extends OfflineSupportBaseActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (savedInstanceState == null) {
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.add(R.id.fragment_container_view, getMainTabsDashboardFragment(), null);
+            fragmentTransaction.disallowAddToBackStack();
+            fragmentTransaction.commit();
+        }
+
         initWhatsNew();
+        showIfRegistrationBecameLogin();
     }
 
-    @Override
+    public int getViewResourceId() {
+        return R.layout.activity_main_dashboard;
+    }
+
     public Object getRefreshEvent() {
         return new MainDashboardRefreshEvent();
     }
@@ -70,8 +89,8 @@ public class MainDashboardActivity extends OfflineSupportBaseActivity {
     private void initWhatsNew() {
         if (environment.getConfig().isWhatsNewEnabled()) {
             boolean shouldShowWhatsNew = false;
-            final PrefManager.AppInfoPrefManager appPrefs = new PrefManager.AppInfoPrefManager(this);
-            final String lastWhatsNewShownVersion = appPrefs.getWhatsNewShownVersion();
+            final InfoPrefs infoPrefs = environment.getInfoPrefs();
+            final String lastWhatsNewShownVersion = infoPrefs.getWhatsNewShownVersion();
             if (lastWhatsNewShownVersion == null) {
                 shouldShowWhatsNew = true;
             } else {
@@ -89,6 +108,29 @@ public class MainDashboardActivity extends OfflineSupportBaseActivity {
             }
             if (shouldShowWhatsNew) {
                 environment.getRouter().showWhatsNewActivity(this);
+            }
+        }
+    }
+
+    /**
+     * Shows a logged-in message when a registered user tries to register again using social auth
+     */
+    private void showIfRegistrationBecameLogin() {
+        if (environment.getLoginPrefs().getAlreadyRegisteredLoggedIn()) {
+            environment.getLoginPrefs().setAlreadyRegisteredLoggedIn(false);
+
+            if (environment.getLoginPrefs().getAuthBackendType() != null &&
+                    !environment.getLoginPrefs().getAuthBackendType().equals(LoginPrefs.AuthBackend.PASSWORD.value())) {
+
+                final Map<String, CharSequence> map = new HashMap<>();
+                map.put(AppConstants.PLATFORM_NAME, environment.getConfig().getPlatformName());
+                map.put(AppConstants.SOCIAL_PROVIDER, environment.getLoginPrefs().getAuthBackendType());
+
+                String loginMsg = ResourceUtil.getFormattedString(getResources(),
+                        R.string.social_registration_became_login_message, map).toString();
+
+                new SnackbarErrorNotification(binding.getRoot())
+                        .showRegistrationBecameLoginSnackbar(loginMsg, !isLandscape());
             }
         }
     }
@@ -113,14 +155,12 @@ public class MainDashboardActivity extends OfflineSupportBaseActivity {
         }
     }
 
-    @Override
-    public Fragment getFirstFragment() {
+    public Fragment getMainTabsDashboardFragment() {
         final Fragment fragment = new MainTabsDashboardFragment();
         final Bundle bundle = getIntent().getExtras();
         fragment.setArguments(bundle);
         return fragment;
     }
-
 
     @Override
     protected void onResume() {
@@ -136,7 +176,7 @@ public class MainDashboardActivity extends OfflineSupportBaseActivity {
     @Subscribe
     public void onEvent(@NonNull final NewVersionAvailableEvent newVersionAvailableEvent) {
         if (!newVersionAvailableEvent.isConsumed()) {
-            final Snackbar snackbar = Snackbar.make(getBinding().coordinatorLayout,
+            final Snackbar snackbar = Snackbar.make(binding.getRoot(),
                     newVersionAvailableEvent.getNotificationString(this),
                     Snackbar.LENGTH_INDEFINITE);
             if (AppStoreUtils.canUpdate(this)) {

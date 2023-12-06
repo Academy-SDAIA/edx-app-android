@@ -289,12 +289,13 @@ public class FirebaseAnalytics implements Analytics {
     }
 
     @Override
-    public void trackUserFindsCourses() {
+    public void trackUserFindsCourses(int enrolledCoursesCount) {
         final FirebaseEvent event = new FirebaseEvent(Events.FIND_COURSES,
                 Values.USER_FIND_COURSES);
 
         //Add category for Google Analytics
         event.addCategoryToBiEvents(Values.USER_ENGAGEMENT, Values.COURSE_DISCOVERY);
+        event.putInt(Keys.ENROLLED_COURSES_COUNT, enrolledCoursesCount);
         logFirebaseEvent(event.getName(), event.getBundle());
     }
 
@@ -403,7 +404,8 @@ public class FirebaseAnalytics implements Analytics {
         final FirebaseEvent event = new FirebaseEvent(Events.COMPONENT_VIEWED,
                 Values.COMPONENT_VIEWED);
         event.putCourseId(courseId);
-        event.putString(Keys.BLOCK_ID, minifiedBlockId);
+        event.putString(Keys.BLOCK_ID, blockId);
+        event.putString(Keys.MINIFIED_BLOCK_ID, minifiedBlockId);
 
         //Add category for Google Analytics
         event.addCategoryToBiEvents(Values.NAVIGATION, Keys.COMPONENT_VIEWED);
@@ -416,7 +418,8 @@ public class FirebaseAnalytics implements Analytics {
         final FirebaseEvent event = new FirebaseEvent(Events.OPEN_IN_BROWSER,
                 Values.OPEN_IN_BROWSER);
         event.putCourseId(courseId);
-        event.putString(Keys.BLOCK_ID, minifiedBlockId);
+        event.putString(Keys.BLOCK_ID, blockId);
+        event.putString(Keys.MINIFIED_BLOCK_ID, minifiedBlockId);
         event.putBoolean(Keys.SUPPORTED, isSupported);
 
         //Add category for Google Analytics

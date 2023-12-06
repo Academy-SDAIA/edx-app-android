@@ -6,7 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
-import com.android.billingclient.api.SkuDetails
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.ProductDetails
 import dagger.hilt.android.AndroidEntryPoint
 import org.edx.mobile.R
 import org.edx.mobile.databinding.FragmentCourseUnitGradeBinding
@@ -16,6 +17,7 @@ import org.edx.mobile.extenstion.isNotVisible
 import org.edx.mobile.extenstion.setImageDrawable
 import org.edx.mobile.extenstion.setVisibility
 import org.edx.mobile.http.HttpStatus
+import org.edx.mobile.inapppurchases.getPriceAmount
 import org.edx.mobile.model.api.AuthorizationDenialReason
 import org.edx.mobile.model.api.EnrolledCoursesResponse
 import org.edx.mobile.model.course.CourseComponent
@@ -40,8 +42,8 @@ import javax.inject.Inject
 class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
 
     private lateinit var binding: FragmentCourseUnitGradeBinding
-    private val iapViewModel: InAppPurchasesViewModel
-            by viewModels(ownerProducer = { requireActivity() })
+
+    private val iapViewModel: InAppPurchasesViewModel by viewModels()
 
     @Inject
     lateinit var iapAnalytics: InAppPurchasesAnalytics
@@ -63,7 +65,7 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
         super.onViewCreated(view, savedInstanceState)
         val isUpgradeable = getBooleanArgument(Router.EXTRA_IS_UPGRADEABLE, true)
         if (AuthorizationDenialReason.FEATURE_BASED_ENROLLMENTS == unit?.authorizationDenialReason) {
-            if (environment.appFeaturesPrefs.isValuePropEnabled() && isUpgradeable) {
+            if (environment.featuresPrefs.isValuePropEnabled && isUpgradeable) {
                 showGradedContent()
             } else {
                 showNotAvailableOnMobile(isLockedContent = true)
@@ -77,23 +79,23 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
         unit?.let { unit ->
             val isSelfPaced = getBooleanArgument(Router.EXTRA_IS_SELF_PACED, false)
             val isPurchaseEnabled = unit.courseSku.isNullOrEmpty().not() &&
-                    environment.appFeaturesPrefs.isIAPEnabled(environment.loginPrefs.isOddUserId)
+                    environment.featuresPrefs.isIAPEnabledForUser(environment.loginPrefs.isOddUserId)
 
-            binding.containerLayoutNotAvailable.setVisibility(false)
+            binding.containerLayoutNotAvailable.root.setVisibility(false)
             binding.llGradedContentLayout.setVisibility(true)
             var experimentGroup: String? = null
-            if (environment.appFeaturesPrefs.isIAPExperimentEnabled()) {
+            if (environment.featuresPrefs.isIAPExperimentEnabled) {
                 experimentGroup = if (environment.loginPrefs.isOddUserId) {
                     Analytics.Values.TREATMENT
                 } else {
                     Analytics.Values.CONTROL
                 }
             }
+            environment.analyticsRegistry.trackLockedContentTapped(unit.courseId, unit.blockId)
             environment.analyticsRegistry.trackValuePropMessageViewed(
                 unit.courseId,
                 Screens.COURSE_UNIT,
-                (unit.courseSku.isNullOrEmpty()
-                    .not() && environment.appFeaturesPrefs.isIAPEnabled()),
+                (unit.courseSku.isNullOrEmpty().not() && environment.featuresPrefs.isIAPEnabled),
                 experimentGroup,
                 unit.id
             )
@@ -135,27 +137,29 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
     }
 
     private fun showNotAvailableOnMobile(isLockedContent: Boolean) {
-        binding.containerLayoutNotAvailable.setVisibility(true)
         binding.llGradedContentLayout.setVisibility(false)
-        binding.notAvailableMessage2.setVisibility(!isLockedContent)
+        binding.containerLayoutNotAvailable.apply {
+            root.setVisibility(true)
+            notAvailableMessage2.setVisibility(!isLockedContent)
 
-        if (isLockedContent) {
-            binding.contentErrorIcon.setImageDrawable(R.drawable.ic_lock)
-            binding.notAvailableMessage.setText(R.string.not_available_on_mobile)
-        } else {
-            binding.contentErrorIcon.setImageDrawable(R.drawable.ic_laptop)
-            binding.notAvailableMessage.setText(
-                if (unit?.isVideoBlock == true) R.string.video_only_on_web_short
-                else R.string.assessment_not_available
-            )
-        }
-
-        binding.viewOnWebButton.setOnClickListener {
-            unit?.let {
-                BrowserUtil.open(activity, it.webUrl, true)
-                environment.analyticsRegistry.trackOpenInBrowser(
-                    it.id, it.courseId, it.isMultiDevice, it.blockId
+            if (isLockedContent) {
+                contentErrorIcon.setImageDrawable(R.drawable.ic_lock)
+                notAvailableMessage.setText(R.string.not_available_on_mobile)
+            } else {
+                contentErrorIcon.setImageDrawable(R.drawable.ic_laptop)
+                notAvailableMessage.setText(
+                    if (unit?.isVideoBlock == true) R.string.video_only_on_web_short
+                    else R.string.assessment_not_available
                 )
+            }
+
+            viewOnWebButton.setOnClickListener {
+                unit?.let {
+                    BrowserUtil.open(activity, it.webUrl, true)
+                    environment.analyticsRegistry.trackOpenInBrowser(
+                        it.id, it.courseId, it.isMultiDevice, it.blockId
+                    )
+                }
             }
         }
     }
@@ -163,8 +167,8 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
     private fun initIAPObserver() {
         initializeBaseObserver()
 
-        iapViewModel.productPrice.observe(viewLifecycleOwner, EventObserver { skuDetails ->
-            setUpUpgradeButton(skuDetails)
+        iapViewModel.productPrice.observe(viewLifecycleOwner, EventObserver {
+            setUpUpgradeButton(it)
         })
 
         iapViewModel.launchPurchaseFlow.observe(viewLifecycleOwner, EventObserver {
@@ -196,6 +200,9 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
                     IAPFlowEvent(IAPAction.SHOW_FULL_SCREEN_LOADER, iapViewModel.iapFlowData)
                 )
             }
+        } else if (BillingClient.BillingResponseCode.USER_CANCELED == errorMessage.getHttpErrorCode()) {
+            iapAnalytics.trackIAPEvent(eventName = Events.IAP_PAYMENT_CANCELED)
+            return
         } else if (errorMessage.canRetry()) {
             retryListener = DialogInterface.OnClickListener { _, _ ->
                 when (errorMessage.requestType) {
@@ -212,8 +219,8 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
         )
     }
 
-    private fun setUpUpgradeButton(skuDetail: SkuDetails) {
-        price = skuDetail.price
+    private fun setUpUpgradeButton(productDetails: ProductDetails.OneTimePurchaseOfferDetails) {
+        price = productDetails.formattedPrice
         binding.layoutUpgradeBtn.root.setVisibility(true)
 
         binding.layoutUpgradeBtn.btnUpgrade.text =
@@ -221,9 +228,9 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
                 resources,
                 R.string.label_upgrade_course_button,
                 AppConstants.PRICE,
-                skuDetail.price
+                price
             ).toString()
-        // The app get the sku details instantly, so add some wait to perform
+        // The app get the product details instantly, so add some wait to perform
         // animation at least one cycle.
         binding.layoutUpgradeBtn.shimmerViewContainer.postDelayed({
             binding.layoutUpgradeBtn.shimmerViewContainer.hideShimmer()
@@ -233,7 +240,11 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
         binding.layoutUpgradeBtn.btnUpgrade.setOnClickListener {
             iapAnalytics.trackIAPEvent(Events.IAP_UPGRADE_NOW_CLICKED)
             unit?.courseSku?.let { productId ->
-                iapViewModel.startPurchaseFlow(productId)
+                iapViewModel.startPurchaseFlow(
+                    productId,
+                    productDetails.getPriceAmount(),
+                    productDetails.priceCurrencyCode,
+                )
             } ?: iapDialog.showPreUpgradeErrorDialog(this)
         }
     }
@@ -246,14 +257,6 @@ class CourseUnitMobileNotSupportedFragment : CourseUnitFragment() {
     override fun onResume() {
         super.onResume()
         EventBus.getDefault().register(this)
-        unit?.let {
-            val isUpgradeable = getBooleanArgument(Router.EXTRA_IS_UPGRADEABLE, true)
-            if (it.authorizationDenialReason == AuthorizationDenialReason.FEATURE_BASED_ENROLLMENTS
-                && environment.appFeaturesPrefs.isValuePropEnabled() && isUpgradeable
-            ) {
-                environment.analyticsRegistry.trackLockedContentTapped(it.courseId, it.blockId)
-            }
-        }
     }
 
     override fun onPause() {

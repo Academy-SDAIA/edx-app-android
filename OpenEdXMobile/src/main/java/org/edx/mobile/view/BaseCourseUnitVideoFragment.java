@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -12,12 +13,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
 import org.edx.mobile.R;
 import org.edx.mobile.course.CourseAPI;
+import org.edx.mobile.databinding.FragmentCourseUnitVideoBinding;
 import org.edx.mobile.event.VideoPlaybackEvent;
 import org.edx.mobile.http.callback.Callback;
 import org.edx.mobile.logger.Logger;
@@ -26,7 +29,7 @@ import org.edx.mobile.model.course.VideoBlockModel;
 import org.edx.mobile.model.db.DownloadEntry;
 import org.edx.mobile.module.db.DataCallback;
 import org.edx.mobile.module.db.impl.DatabaseFactory;
-import org.edx.mobile.module.prefs.LoginPrefs;
+import org.edx.mobile.module.prefs.UserPrefs;
 import org.edx.mobile.player.IPlayerEventCallback;
 import org.edx.mobile.player.TranscriptListener;
 import org.edx.mobile.player.TranscriptManager;
@@ -53,6 +56,9 @@ import subtitleFile.TimedTextObject;
  */
 public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
         implements IPlayerEventCallback, TranscriptListener {
+
+    private FragmentCourseUnitVideoBinding binding;
+
     /**
      * This method use to seek the player to the particular position based on the given caption
      *
@@ -84,7 +90,7 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     /**
      * Method to pause the video player from external call.
      *
-     * @param pauseVideo
+     * @param pauseVideo status of the player
      */
     protected abstract void playPauseVideoPlayback(boolean pauseVideo);
 
@@ -97,18 +103,15 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     protected VideoBlockModel unit;
     private TimedTextObject subtitlesObj;
 
-    protected ListView transcriptListView;
     protected TranscriptAdapter transcriptAdapter;
 
-    private View messageContainer;
-
-    // Defines if the user is scrolling the transcript listview
+    // Defines if the user is scrolling the transcript list
     protected boolean isTranscriptScrolling = false;
-    // Top offset to centralize the currently active transcript item in the listview
-    private float topOffset = 0;
+    // Top offset to centralize the currently active transcript item in the list
+    private int topOffset = 0;
 
     @Inject
-    LoginPrefs loginPrefs;
+    UserPrefs userPrefs;
 
     @Inject
     CourseAPI courseApi;
@@ -116,15 +119,15 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     @Inject
     TranscriptManager transcriptManager;
 
-    private ViewTreeObserver.OnGlobalLayoutListener transcriptListLayoutListener;
+    private ViewTreeObserver.OnGlobalLayoutListener transcriptsLayoutListener;
 
-    private Handler subtitleDisplayHandler = new Handler();
+    private final Handler subtitleDisplayHandler = new Handler();
 
     /**
      * This runnable handles the displaying of
-     * Subtitles on the screen per 100 mili seconds
+     * Subtitles on the screen per 100 milli seconds
      */
-    private Runnable subtitlesProcessorRunnable = () -> {
+    private final Runnable subtitlesProcessorRunnable = () -> {
         if (canProcessSubtitles()) {
             long currentPos = getPlayerCurrentPosition();
             if (subtitlesObj != null) {
@@ -134,8 +137,7 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
                     int startMillis = subtitle.start.getMseconds();
                     int endMillis = subtitle.end.getMseconds();
                     if (currentPos >= startMillis && currentPos <= endMillis) {
-                        String subtitleLang = loginPrefs.getSubtitleLanguage();
-                        if (subtitleLang == null || !subtitleLang.equalsIgnoreCase(getString(R.string.lbl_cc_none))) {
+                        if (userPrefs.getHasSubtitleLanguage()) {
                             updateClosedCaptionData(subtitle);
                         }
                         updateSelection(currentSubtitleIndex);
@@ -173,31 +175,21 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
      * instance number.
      */
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_course_unit_video, container, false);
-        messageContainer = view.findViewById(R.id.message_container);
-        transcriptListView = view.findViewById(R.id.transcript_listview);
+        binding = FragmentCourseUnitVideoBinding.inflate(inflater, container, false);
         if (showCastMiniController()) {
-            view.findViewById(R.id.fl_mini_controller).setVisibility(View.VISIBLE);
+            binding.flMiniController.setVisibility(View.VISIBLE);
         } else {
-            view.findViewById(R.id.fl_mini_controller).setVisibility(View.GONE);
+            binding.flMiniController.setVisibility(View.GONE);
         }
-        return view;
+        return binding.getRoot();
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         restore(savedInstanceState);
-    }
-
-    @Override
-    public void setUserVisibleHint(boolean isVisibleToUser) {
-        super.setUserVisibleHint(isVisibleToUser);
-        if (!isVisibleToUser && unit == null) {
-            updateTranscriptCallbackStatus(false);
-        }
     }
 
     @Override
@@ -205,7 +197,7 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
         Activity activity = getActivity();
         if (activity != null) {
             TranscriptModel transcript = getTranscriptModel();
-            String transcriptUrl = LocaleUtils.getTranscriptURL(activity, transcript);
+            String transcriptUrl = LocaleUtils.getTranscriptURL(activity, transcript, userPrefs.getSubtitleLanguage());
             transcriptManager.downloadTranscriptsForVideo(transcriptUrl, (TimedTextObject transcriptTimedTextObject) -> {
                 subtitlesObj = transcriptTimedTextObject;
                 if (!activity.isDestroyed()) {
@@ -228,13 +220,15 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
 
     private void initTranscripts() {
         if (subtitlesObj != null) {
-            initTranscriptListView();
+            initTranscriptList();
             updateTranscript(subtitlesObj);
-            String subtitleLanguage = LocaleUtils.getCurrentDeviceLanguage(getActivity());
-            if (loginPrefs.getSubtitleLanguage() == null &&
-                    !android.text.TextUtils.isEmpty(subtitleLanguage) &&
-                    getTranscriptModel().containsKey(subtitleLanguage)) {
-                loginPrefs.setSubtitleLanguage(subtitleLanguage);
+            if (userPrefs.getHasSubtitleLanguage() && !getTranscriptModel().containsKey(userPrefs.getSubtitleLanguage())) {
+                String deviceLanguage = LocaleUtils.getCurrentDeviceLanguage(requireActivity());
+                if (!TextUtils.isEmpty(deviceLanguage) && getTranscriptModel().containsKey(deviceLanguage)) {
+                    userPrefs.setSubtitleLanguage(deviceLanguage);
+                } else {
+                    userPrefs.setSubtitleLanguage(getTranscriptModel().keySet().toArray()[0].toString());
+                }
             }
             showClosedCaptionData(subtitlesObj);
         }
@@ -252,7 +246,7 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     @Override
     public void onStop() {
         super.onStop();
-        transcriptListView.getViewTreeObserver().removeOnGlobalLayoutListener(transcriptListLayoutListener);
+        binding.rvTranscripts.getViewTreeObserver().removeOnGlobalLayoutListener(transcriptsLayoutListener);
     }
 
     @Override
@@ -266,28 +260,27 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     @Override
     public void onResume() {
         super.onResume();
+        if (unit == null) {
+            updateTranscriptCallbackStatus(false);
+        }
         updateUIForOrientation();
     }
 
     private void updateUIForOrientation() {
-        final LinearLayout playerContainer = getView().findViewById(R.id.player_container);
         final int orientation = getResources().getConfiguration().orientation;
-        if (playerContainer != null) {
-            final DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-            if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                float screenHeight = displayMetrics.heightPixels;
-                playerContainer.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, (int) screenHeight));
-                setFullScreen(true);
-            } else {
-                float screenWidth = displayMetrics.widthPixels;
-                float ideaHeight = screenWidth * 9 / 16;
-                playerContainer.setLayoutParams(new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, (int) ideaHeight));
-                setFullScreen(false);
-            }
-            playerContainer.requestLayout();
+        final DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            binding.playerContainer.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
+            setFullScreen(true);
+        } else {
+            float screenWidth = displayMetrics.widthPixels;
+            float ideaHeight = screenWidth * 9 / 16;
+            binding.playerContainer.setLayoutParams(new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, (int) ideaHeight));
+            setFullScreen(false);
         }
+        binding.playerContainer.requestLayout();
         updateUI(orientation);
     }
 
@@ -309,10 +302,10 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
      *
      * @param v - Download Entry object
      */
-    public void addVideoDatatoDb(final DownloadEntry v) {
+    public void addVideoDataToDb(final DownloadEntry v) {
         try {
             if (v != null) {
-                DatabaseFactory.getInstance(DatabaseFactory.TYPE_DATABASE_NATIVE).addVideoData(v, new DataCallback<Long>() {
+                DatabaseFactory.getInstance(DatabaseFactory.TYPE_DATABASE_NATIVE).addVideoData(v, new DataCallback<>() {
                     @Override
                     public void onResult(Long result) {
                         if (result != -1) {
@@ -363,13 +356,15 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
                     .updateVideoWatchedState(v.videoId, DownloadEntry.WatchedState.WATCHED,
                             watchedStateCallback);
         }
-        markComponentCompletion(true);
-        courseApi.markBlocksCompletion(unit.getCourseId(), List.of(unit.getId())).enqueue(new Callback<JSONObject>() {
-            @Override
-            protected void onResponse(@NonNull JSONObject responseBody) {
-                // Nothing to do here
-            }
-        });
+        if (!unit.isCompleted()) {
+            markComponentCompletion(true);
+            courseApi.markBlocksCompletion(unit.getCourseId(), List.of(unit.getId())).enqueue(new Callback<>() {
+                @Override
+                protected void onResponse(@NonNull JSONObject responseBody) {
+                    // Nothing to do here
+                }
+            });
+        }
         // mark offset as zero, so that playback will resume from start next time
         saveCurrentPlaybackPosition(0);
     }
@@ -387,7 +382,7 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     }
 
 
-    private DataCallback<Integer> watchedStateCallback = new DataCallback<Integer>() {
+    private final DataCallback<Integer> watchedStateCallback = new DataCallback<>() {
         @Override
         public void onResult(Integer result) {
             logger.debug("Watched State Updated");
@@ -399,7 +394,7 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
         }
     };
 
-    private DataCallback<Integer> setCurrentPositionCallback = new DataCallback<Integer>() {
+    private final DataCallback<Integer> setCurrentPositionCallback = new DataCallback<>() {
         @Override
         public void onResult(Integer result) {
             logger.debug("Current Playback Position Updated");
@@ -412,36 +407,36 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     };
 
     @Override
-    public void onConfigurationChanged(Configuration newConfig) {
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         updateUIForOrientation();
     }
 
     protected void updateUI(int orientation) {
         if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            messageContainer.setVisibility(View.GONE);
-            transcriptListView.setVisibility(View.GONE);
+            binding.messageContainer.setVisibility(View.GONE);
+            binding.rvTranscripts.setVisibility(View.GONE);
         } else {
             if (transcriptAdapter == null) {
-                messageContainer.setVisibility(View.VISIBLE);
-                transcriptListView.setVisibility(View.GONE);
-                initTranscriptListView();
+                binding.messageContainer.setVisibility(View.VISIBLE);
+                binding.rvTranscripts.setVisibility(View.GONE);
+                initTranscriptList();
             } else {
-                messageContainer.setVisibility(View.GONE);
-                transcriptListView.setVisibility(View.VISIBLE);
+                binding.messageContainer.setVisibility(View.GONE);
+                binding.rvTranscripts.setVisibility(View.VISIBLE);
                 // Calculating the offset required for centralizing the current transcript item
                 // p.s. Without this listener the getHeight function returns 0
-                transcriptListLayoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
+                transcriptsLayoutListener = new ViewTreeObserver.OnGlobalLayoutListener() {
                     public void onGlobalLayout() {
                         if (getActivity() != null) {
-                            transcriptListView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                            binding.rvTranscripts.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                             final float transcriptRowHeight = getActivity().getResources().getDimension(R.dimen.transcript_row_height);
-                            final float listviewHeight = transcriptListView.getHeight();
-                            topOffset = (listviewHeight / 2) - (transcriptRowHeight / 2);
+                            final float listHeight = binding.rvTranscripts.getHeight();
+                            topOffset = (int) ((listHeight / 2) - (transcriptRowHeight / 2));
                         }
                     }
                 };
-                transcriptListView.getViewTreeObserver().addOnGlobalLayoutListener(transcriptListLayoutListener);
+                binding.rvTranscripts.getViewTreeObserver().addOnGlobalLayoutListener(transcriptsLayoutListener);
             }
         }
     }
@@ -449,13 +444,11 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     @Override
     public void updateTranscript(@NonNull TimedTextObject subtitles) {
         if (transcriptAdapter != null) {
-            transcriptAdapter.clear();
             List<Caption> transcript = new ArrayList<>();
             for (Map.Entry<Integer, Caption> entry : subtitles.captions.entrySet()) {
                 transcript.add(entry.getValue());
             }
-            transcriptAdapter.addAll(transcript);
-            transcriptAdapter.notifyDataSetChanged();
+            transcriptAdapter.submitList(transcript);
             updateUI(getResources().getConfiguration().orientation);
         }
     }
@@ -464,60 +457,49 @@ public abstract class BaseCourseUnitVideoFragment extends CourseUnitFragment
     public void updateSelection(final int subtitleIndex) {
         if (transcriptAdapter != null && !isTranscriptScrolling
                 && !transcriptAdapter.isSelected(subtitleIndex)) {
-            transcriptAdapter.unselectAll();
             transcriptAdapter.select(subtitleIndex);
-            transcriptAdapter.notifyDataSetChanged();
-            transcriptListView.smoothScrollToPositionFromTop(subtitleIndex, (int) topOffset);
+            LinearLayoutManager layoutManager = ((LinearLayoutManager) binding.rvTranscripts.getLayoutManager());
+            if (layoutManager != null) {
+                layoutManager.scrollToPositionWithOffset(subtitleIndex, topOffset);
+            }
         }
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    protected void initTranscriptListView() {
-        transcriptAdapter = new TranscriptAdapter(getContext(), environment);
-        transcriptListView.setAdapter(transcriptAdapter);
+    protected void initTranscriptList() {
+        transcriptAdapter = new TranscriptAdapter(requireContext(), currentCaption -> {
+            if (currentCaption != null) {
+                binding.rvTranscripts.removeCallbacks(UNFREEZE_AUTO_SCROLL);
+                isTranscriptScrolling = false;
+                seekToCaption(currentCaption);
+            }
+        });
+        binding.rvTranscripts.setAdapter(transcriptAdapter);
 
-        transcriptListView.setOnTouchListener((v, event) -> {
+        binding.rvTranscripts.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
-                case MotionEvent.ACTION_DOWN:
-                case MotionEvent.ACTION_MOVE: {
-                    isTranscriptScrolling = true;
-                    break;
-                }
-                case MotionEvent.ACTION_UP:
-                case MotionEvent.ACTION_CANCEL: {
-                    transcriptListView.removeCallbacks(UNFREEZE_AUTO_SCROLL);
-                    transcriptListView.postDelayed(UNFREEZE_AUTO_SCROLL, UNFREEZE_AUTOSCROLL_DELAY_MS);
-                    break;
+                case MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE ->
+                        isTranscriptScrolling = true;
+                case MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    binding.rvTranscripts.removeCallbacks(UNFREEZE_AUTO_SCROLL);
+                    binding.rvTranscripts.postDelayed(UNFREEZE_AUTO_SCROLL, UNFREEZE_AUTOSCROLL_DELAY_MS);
                 }
             }
             return false;
         });
-
-        transcriptListView.setOnItemClickListener((parent, view, position, id) -> {
-            final Caption currentCaption = transcriptAdapter.getItem(position);
-            if (currentCaption != null) {
-                transcriptListView.removeCallbacks(UNFREEZE_AUTO_SCROLL);
-                isTranscriptScrolling = false;
-
-                transcriptAdapter.unselectAll();
-                transcriptAdapter.select(position);
-                transcriptAdapter.notifyDataSetChanged();
-                seekToCaption(currentCaption);
-            }
-        });
     }
 
     /**
-     * Re-enables our auto scrolling logic of transcript listview with respect to video's current
+     * Re-enables our auto scrolling logic of transcript list with respect to video's current
      * playback position.
      */
     final Runnable UNFREEZE_AUTO_SCROLL = () -> isTranscriptScrolling = false;
 
     public void updateBottomSectionVisibility(int visibility) {
-        if (transcriptListView != null && transcriptAdapter != null) {
+        if (transcriptAdapter != null) {
             if (visibility == View.VISIBLE) {
-                transcriptListView.setVisibility(visibility);
-                messageContainer.setVisibility(View.GONE);
+                binding.rvTranscripts.setVisibility(visibility);
+                binding.messageContainer.setVisibility(View.GONE);
             } else if (getActivity() != null) {
                 updateUI(getActivity().getRequestedOrientation());
             }

@@ -52,17 +52,14 @@ public class Config {
     /* Composite configuration keys */
     private static final String DISCOVERY = "DISCOVERY";
     private static final String PROGRAM = "PROGRAM";
-    private static final String ZERO_RATING = "ZERO_RATING";
     private static final String FACEBOOK = "FACEBOOK";
     private static final String MICROSOFT = "MICROSOFT";
     private static final String GOOGLE = "GOOGLE";
     private static final String TWITTER = "TWITTER";
     private static final String BRANCH = "BRANCH";
-    private static final String NEW_RELIC = "NEW_RELIC";
     private static final String SEGMENT_IO = "SEGMENT_IO";
     private static final String FIREBASE = "FIREBASE";
     private static final String PUSH_NOTIFICATIONS_FLAG = "PUSH_NOTIFICATIONS";
-    private static final String WHITE_LIST_OF_DOMAINS = "WHITE_LIST_OF_DOMAINS";
     private static final String API_URL_VERSION = "API_URL_VERSION";
     private static final String YOUTUBE_PLAYER = "YOUTUBE_PLAYER";
     private static final String AGREEMENT_URLS = "AGREEMENT_URLS";
@@ -74,7 +71,6 @@ public class Config {
     private static final String CERTIFICATES_ENABLED = "CERTIFICATES_ENABLED";
     private static final String COURSE_SHARING_ENABLED = "COURSE_SHARING_ENABLED";
     private static final String BADGES_ENABLED = "BADGES_ENABLED";
-    private static final String END_TO_END_TEST = "END_TO_END_TEST";
     private static final String NEW_LOGISTRATION_ENABLED = "NEW_LOGISTRATION_ENABLED";
     private static final String DISCUSSIONS_ENABLE_PROFILE_PICTURE_PARAM = "DISCUSSIONS_ENABLE_PROFILE_PICTURE_PARAM";
     private static final String REGISTRATION_ENABLED = "REGISTRATION_ENABLED";
@@ -85,29 +81,8 @@ public class Config {
     private static final String WHATS_NEW_ENABLED = "WHATS_NEW_ENABLED";
     private static final String COURSE_VIDEOS_ENABLED = "COURSE_VIDEOS_ENABLED";
     private static final String DOWNLOAD_TO_SD_CARD_ENABLED = "DOWNLOAD_TO_SD_CARD_ENABLED";
-
-    public static class ZeroRatingConfig {
-        @SerializedName("ENABLED")
-        private boolean mEnabled;
-
-        @SerializedName("CARRIERS")
-        private List<String> mCarriers;
-
-        @SerializedName("WHITE_LIST_OF_DOMAINS")
-        private List<String> mWhiteListedDomains;
-
-        public boolean isEnabled() {
-            return mEnabled;
-        }
-
-        public List<String> getCarriers() {
-            return mCarriers != null ? mCarriers : new ArrayList<String>();
-        }
-
-        public List<String> getWhiteListedDomains() {
-            return mWhiteListedDomains != null ? mWhiteListedDomains : new ArrayList<String>();
-        }
-    }
+    private static final String ANNOUNCEMENTS_ENABLED = "ANNOUNCEMENTS_ENABLED";
+    private static final String CHROMECAST_ENABLED = "CHROMECAST_ENABLED";
 
     public static class DiscoveryConfig {
         @SerializedName("TYPE")
@@ -277,53 +252,12 @@ public class Config {
         @SerializedName("KEY")
         private String key;
 
-        @SerializedName("SECRET")
-        private String secret;
-
         public boolean isEnabled() {
             return mEnabled;
         }
 
         public String getKey() {
             return key;
-        }
-
-        public String getSecret() {
-            return secret;
-        }
-    }
-
-    public static class NewRelicConfig {
-        @SerializedName("ENABLED")
-        private boolean mEnabled;
-
-        @SerializedName("NEW_RELIC_KEY")
-        private String mNewRelicKey;
-
-        public boolean isEnabled() {
-            return mEnabled && !TextUtils.isEmpty(mNewRelicKey);
-        }
-
-        public String getNewRelicKey() {
-            return mNewRelicKey;
-        }
-    }
-
-    public static class EndToEndConfig {
-        private static final String DEFAULT_EMAIL_TEMPLATE = "test-{unique_id}@example.com";
-
-        @SerializedName("EMAIL_TEMPLATE")
-        private String mEmailTemplate;
-
-        @SerializedName("TEST_COURSE_ID")
-        private String mTestCourseId;
-
-        public String getEmailTemplate() {
-            return TextUtils.isEmpty(mEmailTemplate) ? DEFAULT_EMAIL_TEMPLATE : mEmailTemplate;
-        }
-
-        public String getTestCourseId() {
-            return mTestCourseId;
         }
     }
 
@@ -493,15 +427,8 @@ public class Config {
         @SerializedName("ENABLED")
         private boolean enabled;
 
-        @SerializedName("API_KEY")
-        private String apiKey;
-
         public boolean isYoutubePlayerEnabled() {
             return enabled;
-        }
-
-        public String getApiKey() {
-            return apiKey;
         }
     }
 
@@ -699,6 +626,15 @@ public class Config {
         return getBoolean(COURSE_VIDEOS_ENABLED, true);
     }
 
+    public boolean isAnnouncementEnabled() {
+        return getBoolean(ANNOUNCEMENTS_ENABLED, true);
+    }
+
+    // locally defined flag to disable the chromecast
+    public boolean isChromeCastEnabled() {
+        return getBoolean(CHROMECAST_ENABLED, true);
+    }
+
     public boolean isDownloadToSDCardEnabled() {
         return getBoolean(DOWNLOAD_TO_SD_CARD_ENABLED, false);
     }
@@ -711,11 +647,6 @@ public class Config {
     @NonNull
     public DiscoveryConfig getDiscoveryConfig() {
         return getObjectOrNewInstance(DISCOVERY, DiscoveryConfig.class);
-    }
-
-    @NonNull
-    public ZeroRatingConfig getZeroRatingConfig() {
-        return getObjectOrNewInstance(ZERO_RATING, ZeroRatingConfig.class);
     }
 
     @NonNull
@@ -744,11 +675,6 @@ public class Config {
     }
 
     @NonNull
-    public NewRelicConfig getNewRelicConfig() {
-        return getObjectOrNewInstance(NEW_RELIC, NewRelicConfig.class);
-    }
-
-    @NonNull
     public SegmentConfig getSegmentConfig() {
         return getObjectOrNewInstance(SEGMENT_IO, SegmentConfig.class);
     }
@@ -761,11 +687,6 @@ public class Config {
     @NonNull
     public BrazeConfig getBrazeConfig() {
         return getObjectOrNewInstance(BRAZE, BrazeConfig.class);
-    }
-
-    @NonNull
-    public EndToEndConfig getEndToEndConfig() {
-        return getObjectOrNewInstance(END_TO_END_TEST, EndToEndConfig.class);
     }
 
     @NonNull

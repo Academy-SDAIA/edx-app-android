@@ -8,13 +8,15 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.cast.framework.CastButtonFactory
 import com.google.android.gms.cast.framework.CastStateListener
 import org.edx.mobile.R
-import org.edx.mobile.event.NewRelicEvent
 import org.edx.mobile.googlecast.GoogleCastDelegate
 import org.edx.mobile.logger.Logger
-import org.greenrobot.eventbus.EventBus
+import org.edx.mobile.util.Config
+import javax.inject.Inject
 
 abstract class BaseAppActivity : AppCompatActivity(), CastStateListener {
 
+    @Inject
+    lateinit var config: Config
     private var googleCastDelegate: GoogleCastDelegate? = null
     private var mediaRouteMenuItem: MenuItem? = null
     private val logger = Logger(
@@ -24,12 +26,13 @@ abstract class BaseAppActivity : AppCompatActivity(), CastStateListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EventBus.getDefault().post(NewRelicEvent(javaClass.simpleName))
-        googleCastDelegate = GoogleCastDelegate.getInstance(
-            MainApplication.getEnvironment(this)
-                .analyticsRegistry
-        )
-        googleCastDelegate?.addCastStateListener(this)
+        if (config.isChromeCastEnabled) {
+            googleCastDelegate = GoogleCastDelegate.getInstance(
+                MainApplication.getEnvironment(this)
+                    .analyticsRegistry
+            )
+            googleCastDelegate?.addCastStateListener(this)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -86,7 +89,7 @@ abstract class BaseAppActivity : AppCompatActivity(), CastStateListener {
          * as part of the Jira story: https://openedx.atlassian.net/browse/LEARNER-7722
          */
         try {
-            if (isInForeground) {
+            if (config.isChromeCastEnabled && isInForeground) {
                 if (mediaRouteMenuItem != null) {
                     googleCastDelegate?.showIntroductoryOverlay(this, mediaRouteMenuItem)
                 }

@@ -6,8 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.NonNull
-import androidx.annotation.Nullable
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
@@ -26,7 +24,9 @@ import org.edx.mobile.event.MediaStatusChangeEvent
 import org.edx.mobile.event.MyCoursesRefreshEvent
 import org.edx.mobile.event.ProfilePhotoUpdatedEvent
 import org.edx.mobile.exception.ErrorMessage
+import org.edx.mobile.extenstion.CollapsingToolbarStatListener
 import org.edx.mobile.extenstion.isVisible
+import org.edx.mobile.extenstion.setTitleStateListener
 import org.edx.mobile.extenstion.setVisibility
 import org.edx.mobile.http.HttpStatus
 import org.edx.mobile.model.iap.IAPFlowData
@@ -35,7 +35,7 @@ import org.edx.mobile.model.video.VideoQuality
 import org.edx.mobile.module.analytics.Analytics
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
 import org.edx.mobile.module.prefs.LoginPrefs
-import org.edx.mobile.module.prefs.PrefManager
+import org.edx.mobile.module.prefs.UserPrefs
 import org.edx.mobile.user.UserAPI.AccountDataUpdatedCallback
 import org.edx.mobile.user.UserService
 import org.edx.mobile.util.AgreementUrlType
@@ -48,6 +48,7 @@ import org.edx.mobile.util.InAppPurchasesException
 import org.edx.mobile.util.NonNullObserver
 import org.edx.mobile.util.ResourceUtil
 import org.edx.mobile.util.UserProfileUtils
+import org.edx.mobile.util.ViewAnimationUtil
 import org.edx.mobile.util.observer.EventObserver
 import org.edx.mobile.view.dialog.AlertDialogFragment
 import org.edx.mobile.view.dialog.FullscreenLoaderDialogFragment
@@ -77,6 +78,9 @@ class AccountFragment : BaseFragment() {
     lateinit var loginPrefs: LoginPrefs
 
     @Inject
+    lateinit var userPrefs: UserPrefs
+
+    @Inject
     lateinit var userService: UserService
 
     @Inject
@@ -93,7 +97,6 @@ class AccountFragment : BaseFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        environment.analyticsRegistry.trackScreenView(Analytics.Screens.PROFILE)
         EventBus.getDefault().register(this)
         sendGetUpdatedAccountCall()
     }
@@ -117,16 +120,46 @@ class AccountFragment : BaseFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initTitle()
         initPersonalInfo()
+        initPurchases()
         handleIntentBundle(arguments)
         initVideoQuality()
         updateWifiSwitch()
         updateSDCardSwitch()
         initHelpFields()
         initPrivacyFields()
+        initViews()
+    }
 
-        val iapEnabled =
-            environment.appFeaturesPrefs.isIAPEnabled(loginPrefs.isOddUserId)
+    private fun initTitle() {
+        arguments?.getString(Router.EXTRA_SCREEN_TITLE)?.let {
+            binding.toolbar.root.setVisibility(true)
+            binding.toolbar.tvTitle.text = it
+            binding.toolbar.appbar.setTitleStateListener(
+                binding.toolbar.collapsingToolbar,
+                object : CollapsingToolbarStatListener {
+                    override fun onExpanded() {
+                        ViewAnimationUtil.animateTitleSize(
+                            binding.toolbar.tvTitle,
+                            resources.getDimension(R.dimen.edx_x_large)
+                        )
+                    }
+
+                    override fun onCollapsed() {
+                        ViewAnimationUtil.animateTitleSize(
+                            binding.toolbar.tvTitle,
+                            resources.getDimension(R.dimen.edx_large)
+                        )
+                    }
+                })
+        } ?: run {
+            binding.toolbar.root.setVisibility(false)
+        }
+    }
+
+    private fun initPurchases() {
+        val iapEnabled = environment.featuresPrefs.isIAPEnabledForUser(loginPrefs.isOddUserId)
         if (iapEnabled) {
             initRestorePurchasesObservers()
             binding.containerPurchases.setVisibility(true)
@@ -144,39 +177,6 @@ class AccountFragment : BaseFragment() {
         } else {
             binding.containerPurchases.setVisibility(false)
         }
-        if (loginPrefs.isUserLoggedIn) {
-            binding.btnSignOut.visibility = View.VISIBLE
-            binding.btnSignOut.setOnClickListener {
-                environment.router.performManualLogout(
-                    context,
-                    environment.analyticsRegistry, environment.notificationDelegate
-                )
-            }
-
-            config.deleteAccountUrl?.let { deleteAccountUrl ->
-                binding.containerDeleteAccount.visibility = View.VISIBLE
-                binding.btnDeleteAccount.setOnClickListener {
-                    environment.router.showAuthenticatedWebViewActivity(
-                        this.requireContext(),
-                        deleteAccountUrl, getString(R.string.title_delete_my_account), false
-                    )
-                    trackEvent(
-                        Analytics.Events.DELETE_ACCOUNT_CLICKED,
-                        Analytics.Values.DELETE_ACCOUNT_CLICKED
-                    )
-                }
-            }
-        }
-
-        binding.appVersion.text = String.format(
-            "%s %s %s", getString(R.string.label_app_version),
-            BuildConfig.VERSION_NAME, config.environmentDisplayName
-        )
-
-        environment.analyticsRegistry.trackScreenViewEvent(
-            Analytics.Events.PROFILE_PAGE_VIEWED,
-            Analytics.Screens.PROFILE
-        )
     }
 
     private fun initRestorePurchasesObservers() {
@@ -377,9 +377,9 @@ class AccountFragment : BaseFragment() {
                 Analytics.Events.PERSONAL_INFORMATION_CLICKED,
                 Analytics.Values.PERSONAL_INFORMATION_CLICKED
             )
-            environment.router.showUserProfile(requireActivity(), loginPrefs.username)
-            setVideoQualityDescription(loginPrefs.videoQuality)
+            environment.router.showUserProfileEditor(requireActivity(), loginPrefs.username)
         }
+        setVideoQualityDescription(userPrefs.videoQuality)
     }
 
     private fun initPrivacyFields() {
@@ -448,15 +448,43 @@ class AccountFragment : BaseFragment() {
         binding.containerPrivacy.setVisibility(isContainerVisible)
     }
 
+    private fun initViews() {
+        if (loginPrefs.isUserLoggedIn) {
+            binding.btnSignOut.visibility = View.VISIBLE
+            binding.btnSignOut.setOnClickListener {
+                environment.router.performManualLogout(
+                    context,
+                    environment.analyticsRegistry, environment.notificationDelegate
+                )
+            }
+
+            config.deleteAccountUrl?.let { deleteAccountUrl ->
+                binding.containerDeleteAccount.visibility = View.VISIBLE
+                binding.btnDeleteAccount.setOnClickListener {
+                    environment.router.showAuthenticatedWebViewActivity(
+                        this.requireContext(),
+                        deleteAccountUrl, getString(R.string.title_delete_my_account), false
+                    )
+                    trackEvent(
+                        Analytics.Events.DELETE_ACCOUNT_CLICKED,
+                        Analytics.Values.DELETE_ACCOUNT_CLICKED
+                    )
+                }
+            }
+        }
+
+        binding.appVersion.text = String.format(
+            "%s %s %s", getString(R.string.label_app_version),
+            BuildConfig.VERSION_NAME, config.environmentDisplayName
+        )
+    }
+
     private fun updateWifiSwitch() {
-        val wifiPrefManager = PrefManager(requireContext(), PrefManager.Pref.WIFI)
         binding.switchWifi.setOnCheckedChangeListener(null)
-        binding.switchWifi.isChecked =
-            wifiPrefManager.getBoolean(PrefManager.Key.DOWNLOAD_ONLY_ON_WIFI, true)
+        binding.switchWifi.isChecked = userPrefs.isDownloadOverWifiOnly
         binding.switchWifi.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
-                wifiPrefManager.put(PrefManager.Key.DOWNLOAD_ONLY_ON_WIFI, true)
-                wifiPrefManager.put(PrefManager.Key.DOWNLOAD_OFF_WIFI_SHOW_DIALOG_FLAG, true)
+                userPrefs.isDownloadOverWifiOnly = true
                 trackEvent(Analytics.Events.WIFI_ON, Analytics.Values.WIFI_ON)
             } else {
                 showWifiDialog()
@@ -470,33 +498,19 @@ class AccountFragment : BaseFragment() {
                 getString(R.string.wifi_dialog_message_help),
                 object : IDialogCallback {
                     override fun onPositiveClicked() {
-                        try {
-                            val wifiPrefManager =
-                                PrefManager(requireContext(), PrefManager.Pref.WIFI)
-                            wifiPrefManager.put(PrefManager.Key.DOWNLOAD_ONLY_ON_WIFI, false)
-                            trackEvent(Analytics.Events.WIFI_ALLOW, Analytics.Values.WIFI_ALLOW)
-                            trackEvent(Analytics.Events.WIFI_OFF, Analytics.Values.WIFI_OFF)
-                            updateWifiSwitch()
-                        } catch (ex: Exception) {
-                        }
+                        userPrefs.isDownloadOverWifiOnly = false
+                        trackEvent(Analytics.Events.WIFI_ALLOW, Analytics.Values.WIFI_ALLOW)
+                        trackEvent(Analytics.Events.WIFI_OFF, Analytics.Values.WIFI_OFF)
+                        updateWifiSwitch()
                     }
 
                     override fun onNegativeClicked() {
-                        try {
-                            val wifiPrefManager =
-                                PrefManager(requireContext(), PrefManager.Pref.WIFI)
-                            wifiPrefManager.put(PrefManager.Key.DOWNLOAD_ONLY_ON_WIFI, true)
-                            wifiPrefManager.put(
-                                PrefManager.Key.DOWNLOAD_OFF_WIFI_SHOW_DIALOG_FLAG,
-                                true
-                            )
-                            trackEvent(
-                                Analytics.Events.WIFI_DONT_ALLOW,
-                                Analytics.Values.WIFI_DONT_ALLOW
-                            )
-                            updateWifiSwitch()
-                        } catch (ex: Exception) {
-                        }
+                        userPrefs.isDownloadOverWifiOnly = true
+                        trackEvent(
+                            Analytics.Events.WIFI_DONT_ALLOW,
+                            Analytics.Values.WIFI_DONT_ALLOW
+                        )
+                        updateWifiSwitch()
                     }
                 })
         dialogFragment.isCancelable = false
@@ -504,11 +518,10 @@ class AccountFragment : BaseFragment() {
     }
 
     private fun updateSDCardSwitch() {
-        val prefManager = PrefManager(requireContext(), PrefManager.Pref.USER_PREF)
         if (!environment.config.isDownloadToSDCardEnabled || Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             binding.containerSdCard.visibility = View.GONE
             binding.tvDescriptionSdCard.visibility = View.GONE
-            prefManager.put(PrefManager.Key.DOWNLOAD_TO_SDCARD, false)
+            userPrefs.isDownloadToSDCardEnabled = false
         } else {
             if (!EventBus.getDefault().isRegistered(this)) {
                 EventBus.getDefault().register(this)
@@ -516,7 +529,7 @@ class AccountFragment : BaseFragment() {
             binding.switchSdCard.setOnCheckedChangeListener(null)
             binding.switchSdCard.isChecked = environment.userPrefs.isDownloadToSDCardEnabled
             binding.switchSdCard.setOnCheckedChangeListener { _, isChecked ->
-                prefManager.put(PrefManager.Key.DOWNLOAD_TO_SDCARD, isChecked)
+                userPrefs.isDownloadToSDCardEnabled = isChecked
                 // Send analytics
                 if (isChecked) trackEvent(
                     Analytics.Events.DOWNLOAD_TO_SD_CARD_ON,
@@ -558,7 +571,7 @@ class AccountFragment : BaseFragment() {
 
     @Subscribe(sticky = true)
     @Suppress("UNUSED_PARAMETER")
-    fun onEventMainThread(@NonNull event: AccountDataLoadedEvent) {
+    fun onEventMainThread(event: AccountDataLoadedEvent) {
         if (!environment.config.isUserProfilesEnabled) {
             return
         }
@@ -577,7 +590,7 @@ class AccountFragment : BaseFragment() {
 
     companion object {
         @JvmStatic
-        fun newInstance(@Nullable bundle: Bundle?): AccountFragment {
+        fun newInstance(bundle: Bundle): AccountFragment {
             val fragment = AccountFragment()
             fragment.arguments = bundle
             return fragment

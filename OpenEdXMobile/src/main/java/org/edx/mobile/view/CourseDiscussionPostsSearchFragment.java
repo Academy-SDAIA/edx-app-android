@@ -6,11 +6,11 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ListView;
 import android.widget.SearchView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.edx.mobile.R;
 import org.edx.mobile.databinding.FragmentDiscussionSearchPostsBinding;
@@ -21,6 +21,7 @@ import org.edx.mobile.model.Page;
 import org.edx.mobile.model.discussion.DiscussionRequestFields;
 import org.edx.mobile.model.discussion.DiscussionThread;
 import org.edx.mobile.module.analytics.Analytics;
+import org.edx.mobile.util.Config;
 import org.edx.mobile.util.ResourceUtil;
 import org.edx.mobile.util.SoftKeyboardUtil;
 import org.edx.mobile.view.adapters.InfiniteScrollUtils;
@@ -29,7 +30,6 @@ import org.edx.mobile.view.common.TaskMessageCallback;
 import org.edx.mobile.view.common.TaskProcessCallback;
 import org.edx.mobile.view.common.TaskProgressCallback;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +44,9 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
 
     @Inject
     DiscussionService discussionService;
+
+    @Inject
+    Config config;
 
     private String searchQuery;
     private Call<Page<DiscussionThread>> searchThreadListCall;
@@ -80,7 +83,7 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
                 searchQuery = query;
                 nextPage = 1;
                 controller.reset();
-                binding.discussionPostsListview.setVisibility(View.INVISIBLE);
+                binding.discussionPostsRv.setVisibility(View.INVISIBLE);
                 return true;
             }
 
@@ -92,7 +95,7 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
 
         final Map<String, String> values = new HashMap<>();
         values.put(Analytics.Keys.SEARCH_STRING, searchQuery);
-        environment.getAnalyticsRegistry().trackScreenView(Analytics.Screens.FORUM_SEARCH_THREADS,
+        analyticsRegistry.trackScreenView(Analytics.Screens.FORUM_SEARCH_THREADS,
                 courseData.getCourse().getId(), searchQuery, values);
     }
 
@@ -101,8 +104,8 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
     }
 
     @Override
-    protected ListView getDiscussionPostsListView() {
-        return binding.discussionPostsListview;
+    protected RecyclerView getDiscussionPostsRecyclerView() {
+        return binding.discussionPostsRv;
     }
 
     @Override
@@ -116,8 +119,7 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
         if (searchThreadListCall != null) {
             searchThreadListCall.cancel();
         }
-        final List<String> requestedFields = Collections.singletonList(
-                DiscussionRequestFields.PROFILE_IMAGE.getQueryParamValue());
+        final List<String> requestedFields = DiscussionRequestFields.getRequestedFieldsList(config);
         searchThreadListCall = discussionService.searchThreadList(
                 courseData.getCourse().getId(), searchQuery, nextPage, requestedFields);
         final boolean isRefreshingSilently = callback.isRefreshingSilently();
@@ -132,7 +134,7 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
                 ++nextPage;
                 callback.onPageLoaded(threadsPage);
                 if (activity instanceof TaskProcessCallback) {
-                    if (discussionPostsAdapter.getCount() == 0) {
+                    if (discussionPostsAdapter.getItemCount() == 0) {
                         String escapedTitle = TextUtils.htmlEncode(searchQuery);
                         String resultsText = ResourceUtil.getFormattedString(
                                 requireContext().getResources(),
@@ -144,7 +146,7 @@ public class CourseDiscussionPostsSearchFragment extends CourseDiscussionPostsBa
                         ((TaskProcessCallback) activity).onMessage(MessageType.ERROR, resultsText);
                     } else {
                         ((TaskProcessCallback) activity).onMessage(MessageType.EMPTY, "");
-                        binding.discussionPostsListview.setVisibility(View.VISIBLE);
+                        binding.discussionPostsRv.setVisibility(View.VISIBLE);
                     }
                 }
             }

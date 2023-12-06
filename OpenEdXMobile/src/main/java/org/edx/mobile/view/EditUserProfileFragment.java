@@ -16,16 +16,19 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.PopupMenu;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
+import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.tabs.TabLayout.Tab;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -36,6 +39,7 @@ import org.edx.mobile.R;
 import org.edx.mobile.base.BaseFragment;
 import org.edx.mobile.event.AccountDataLoadedEvent;
 import org.edx.mobile.event.ProfilePhotoUpdatedEvent;
+import org.edx.mobile.extenstion.ViewExtKt;
 import org.edx.mobile.http.callback.CallTrigger;
 import org.edx.mobile.http.notifications.DialogErrorNotification;
 import org.edx.mobile.model.user.Account;
@@ -45,10 +49,6 @@ import org.edx.mobile.model.user.FormDescription;
 import org.edx.mobile.model.user.FormField;
 import org.edx.mobile.model.user.LanguageProficiency;
 import org.edx.mobile.module.analytics.AnalyticsRegistry;
-import org.edx.mobile.task.Task;
-import org.edx.mobile.user.DeleteAccountImageTask;
-import org.edx.mobile.user.GetProfileFormDescriptionTask;
-import org.edx.mobile.user.SetAccountImageTask;
 import org.edx.mobile.user.UserAPI.AccountDataUpdatedCallback;
 import org.edx.mobile.user.UserService;
 import org.edx.mobile.util.InvalidLocaleException;
@@ -58,7 +58,9 @@ import org.edx.mobile.util.ResourceUtil;
 import org.edx.mobile.util.UserProfileUtils;
 import org.edx.mobile.util.images.ImageCaptureHelper;
 import org.edx.mobile.util.images.ImageUtils;
+import org.edx.mobile.util.observer.EventObserver;
 import org.edx.mobile.view.common.TaskMessageCallback;
+import org.edx.mobile.viewModel.ProfileViewModel;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
@@ -73,26 +75,14 @@ import de.hdodenhof.circleimageview.CircleImageView;
 import retrofit2.Call;
 
 @AndroidEntryPoint
-public class EditUserProfileFragment extends BaseFragment implements BaseFragment.PermissionListener {
-
-    private static final int EDIT_FIELD_REQUEST = 1;
-    private static final int CAPTURE_PHOTO_REQUEST = 2;
-    private static final int CHOOSE_PHOTO_REQUEST = 3;
-    private static final int CROP_PHOTO_REQUEST = 4;
+public class EditUserProfileFragment extends BaseFragment {
 
     private String username;
 
     private Call<Account> getAccountCall;
 
-    private GetProfileFormDescriptionTask getProfileFormDescriptionTask;
-
-    private Task setAccountImageTask;
-
     @Nullable
     private Account account;
-
-    @Nullable
-    private FormDescription formDescription;
 
     @Nullable
     private ViewHolder viewHolder;
@@ -106,8 +96,90 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
     @Inject
     AnalyticsRegistry analyticsRegistry;
 
+    ProfileViewModel profileViewModel;
+
     @NonNull
     private final ImageCaptureHelper helper = new ImageCaptureHelper();
+
+    private final ActivityResultLauncher<Intent> photoCropLauncher =
+            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+                Intent resultData = result.getData();
+                if (result.getResultCode() == Activity.RESULT_OK && resultData != null) {
+                    final Uri imageUri = CropImageActivity.getImageUriFromResult(resultData);
+                    final Rect cropRect = CropImageActivity.getCropRectFromResult(resultData);
+                    if (imageUri != null && cropRect != null) {
+                        profileViewModel.uploadProfileImage(requireActivity(), imageUri, cropRect);
+                        analyticsRegistry.trackProfilePhotoSet(CropImageActivity.isResultFromCamera(resultData));
+                    }
+                }
+            });
+
+    private final ActivityResultLauncher<Intent> photoChooserLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                Intent resultData = result.getData();
+                if (result.getResultCode() == Activity.RESULT_OK && resultData != null) {
+                    Uri imageUri = resultData.getData();
+                    if (imageUri != null) {
+                        photoCropLauncher.launch(CropImageActivity.newIntent(requireActivity(), imageUri, false));
+                    }
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> photoCaptureLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+                    Uri imageUri = helper.getImageUriFromResult();
+                    if (imageUri != null) {
+                        // Rotate image according to exif tag, because exif rotation is creating rotation issues
+                        // in third-party libraries used for zooming and cropping in this project. [MA-3175]
+                        final Uri rotatedImageUri = ImageUtils.rotateImageAccordingToExifTag(requireActivity(), imageUri);
+                        if (rotatedImageUri != null) {
+                            imageUri = rotatedImageUri;
+                        }
+                        photoCropLauncher.launch(CropImageActivity.newIntent(requireActivity(), imageUri, true));
+                    }
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<Intent> editProfileLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                Intent resultData = result.getData();
+                if (result.getResultCode() == Activity.RESULT_OK && resultData != null) {
+                    final FormField fieldName = (FormField) resultData.getSerializableExtra(FormFieldActivity.EXTRA_FIELD);
+                    final String fieldValue = resultData.getStringExtra(FormFieldActivity.EXTRA_VALUE);
+                    executeUpdate(fieldName, fieldValue);
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<String> storagePermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    final Intent galleryIntent = new Intent()
+                            .setType("image/*")
+                            .setAction(Intent.ACTION_GET_CONTENT);
+                    photoChooserLauncher.launch(galleryIntent);
+                } else {
+                    showPermissionDeniedMessage();
+                }
+            }
+    );
+
+    private final ActivityResultLauncher<String> cameraPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            isGranted -> {
+                if (isGranted) {
+                    photoCaptureLauncher.launch(helper.createCaptureIntent(requireActivity()));
+                } else {
+                    showPermissionDeniedMessage();
+                }
+            });
 
     @SuppressLint("StaticFieldLeak")
     @Override
@@ -115,30 +187,15 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
         EventBus.getDefault().register(this);
-
         parseExtras();
 
-        final Activity activity = getActivity();
+        final Activity activity = requireActivity();
         final TaskMessageCallback mCallback = activity instanceof TaskMessageCallback ? (TaskMessageCallback) activity : null;
         getAccountCall = userService.getAccount(username);
         getAccountCall.enqueue(new AccountDataUpdatedCallback(
                 activity, username,
                 null, // Disable default loading indicator, we have our own
                 mCallback, CallTrigger.LOADING_CACHED));
-
-        getProfileFormDescriptionTask = new GetProfileFormDescriptionTask(activity) {
-
-            @Override
-            protected void onPostExecute(FormDescription formDescription) {
-                super.onPostExecute(formDescription);
-                EditUserProfileFragment.this.formDescription = formDescription;
-                if (null != viewHolder) {
-                    setData(account, formDescription);
-                }
-            }
-        };
-        getProfileFormDescriptionTask.setTaskProcessCallback(null);
-        getProfileFormDescriptionTask.execute();
     }
 
     @Nullable
@@ -148,9 +205,10 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
     }
 
     @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
+    public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        permissionListener = this;
+        initObservers();
+
         viewHolder = new ViewHolder(view);
         viewHolder.profileImageProgress.setVisibility(View.GONE);
         viewHolder.username.setText(username);
@@ -159,27 +217,16 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         viewHolder.changePhoto.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final PopupMenu popup = new PopupMenu(getActivity(), v);
+                final PopupMenu popup = new PopupMenu(requireActivity(), v);
                 popup.getMenuInflater().inflate(R.menu.change_photo, popup.getMenu());
                 popup.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
                     public boolean onMenuItemClick(MenuItem item) {
                         switch (item.getItemId()) {
-                            case R.id.take_photo: {
-                                askForPermission(new String[]{Manifest.permission.CAMERA},
-                                        PermissionsUtil.CAMERA_PERMISSION_REQUEST);
-                                break;
-                            }
-                            case R.id.choose_photo: {
-                                askForPermission(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                                        PermissionsUtil.READ_STORAGE_PERMISSION_REQUEST);
-                                break;
-                            }
-                            case R.id.remove_photo: {
-                                final Task<Void> task = new DeleteAccountImageTask(getActivity(), username);
-                                task.setProgressDialog(viewHolder.profileImageProgress);
-                                executePhotoTask(task);
-                                break;
-                            }
+                            case R.id.take_photo ->
+                                    cameraPermissionLauncher.launch(Manifest.permission.CAMERA);
+                            case R.id.choose_photo ->
+                                    storagePermissionLauncher.launch(PermissionsUtil.getReadStoragePermission());
+                            case R.id.remove_photo -> profileViewModel.removeProfileImage();
                         }
                         return true;
                     }
@@ -187,31 +234,29 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
                 popup.show();
             }
         });
-        setData(account, formDescription);
+        setData(account, profileViewModel.getFormDescription());
+    }
+
+    private void initObservers() {
+        profileViewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        profileViewModel.setProfileFormDescription(getResources().openRawResource(R.raw.profiles));
+
+        profileViewModel.getShowProgress().observe(getViewLifecycleOwner(), new EventObserver<>(showProgress -> {
+            if (viewHolder != null) {
+                ViewExtKt.setVisibility(viewHolder.profileImageProgress, showProgress);
+            }
+            return null;
+        }));
     }
 
     private void parseExtras() {
         username = getArguments().getString(EditUserProfileActivity.EXTRA_USERNAME);
     }
 
-    private void executePhotoTask(Task<Void> task) {
-        viewHolder.profileImageProgress.setVisibility(View.VISIBLE);
-        // TODO: Test this with "Don't keep activities"
-        if (null != setAccountImageTask) {
-            setAccountImageTask.cancel(true);
-        }
-        setAccountImageTask = task;
-        task.execute();
-    }
-
     @Override
     public void onDestroy() {
         super.onDestroy();
         getAccountCall.cancel();
-        getProfileFormDescriptionTask.cancel(true);
-        if (null != setAccountImageTask) {
-            setAccountImageTask.cancel(true);
-        }
         helper.deleteTemporaryFile();
 
         EventBus.getDefault().unregister(this);
@@ -226,7 +271,7 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
     @Subscribe
     @SuppressWarnings("unused")
     public void onEventMainThread(@NonNull ProfilePhotoUpdatedEvent event) {
-        UserProfileUtils.loadProfileImage(getContext(), event, viewHolder.profileImage);
+        UserProfileUtils.loadProfileImage(requireContext(), event, viewHolder.profileImage);
     }
 
     @Subscribe
@@ -235,7 +280,7 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         if (event.getAccount().getUsername().equals(username)) {
             account = event.getAccount();
             if (null != viewHolder) {
-                setData(account, formDescription);
+                setData(account, profileViewModel.getFormDescription());
             }
         }
     }
@@ -381,7 +426,7 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
                         createField(layoutInflater, viewHolder.fields, field, displayValue, isLimited && !field.getName().equals(Account.YEAR_OF_BIRTH_SERIALIZED_NAME), new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                startActivityForResult(FormFieldActivity.newIntent(getActivity(), field, value), EDIT_FIELD_REQUEST);
+                                editProfileLauncher.launch(FormFieldActivity.newIntent(requireActivity(), field, value));
                             }
                         });
                         break;
@@ -406,53 +451,6 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         }
     }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode != Activity.RESULT_OK) {
-            return;
-        }
-        switch (requestCode) {
-            case CAPTURE_PHOTO_REQUEST: {
-                Uri imageUri = helper.getImageUriFromResult();
-                if (null != imageUri) {
-                    // Rotate image according to exif tag, because exif rotation is creating rotation issues
-                    // in thirdparty libraries used for zooming and cropping in this project. [MA-3175]
-                    final Uri rotatedImageUri = ImageUtils.rotateImageAccordingToExifTag(getContext(), imageUri);
-                    if (null != rotatedImageUri) {
-                        imageUri = rotatedImageUri;
-                    }
-                    startActivityForResult(CropImageActivity.newIntent(getActivity(), imageUri, true), CROP_PHOTO_REQUEST);
-                }
-                break;
-            }
-            case CHOOSE_PHOTO_REQUEST: {
-                final Uri imageUri = data.getData();
-                if (null != imageUri) {
-                    startActivityForResult(CropImageActivity.newIntent(getActivity(), imageUri, false), CROP_PHOTO_REQUEST);
-                }
-                break;
-            }
-            case CROP_PHOTO_REQUEST: {
-                final Uri imageUri = CropImageActivity.getImageUriFromResult(data);
-                final Rect cropRect = CropImageActivity.getCropRectFromResult(data);
-                if (null != imageUri && null != cropRect) {
-                    final Task<Void> task = new SetAccountImageTask(getActivity(), username, imageUri, cropRect);
-                    task.setProgressDialog(viewHolder.profileImageProgress);
-                    executePhotoTask(task);
-                    analyticsRegistry.trackProfilePhotoSet(CropImageActivity.isResultFromCamera(data));
-                }
-                break;
-            }
-            case EDIT_FIELD_REQUEST: {
-                final FormField fieldName = (FormField) data.getSerializableExtra(FormFieldActivity.EXTRA_FIELD);
-                final String fieldValue = data.getStringExtra(FormFieldActivity.EXTRA_VALUE);
-                executeUpdate(fieldName, fieldValue);
-                break;
-            }
-        }
-    }
-
     private void executeUpdate(FormField field, String fieldValue) {
         final Object valueObject;
         if (field.getDataType() == DataType.LANGUAGE) {
@@ -465,13 +463,13 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
             valueObject = fieldValue;
         }
         userService.updateAccount(username, Collections.singletonMap(field.getName(), valueObject))
-                .enqueue(new AccountDataUpdatedCallback(getActivity(), username,
+                .enqueue(new AccountDataUpdatedCallback(requireActivity(), username,
                         new DialogErrorNotification(this)) {
                     @Override
                     protected void onResponse(@NonNull final Account account) {
                         super.onResponse(account);
                         EditUserProfileFragment.this.account = account;
-                        setData(account, formDescription);
+                        setData(account, profileViewModel.getFormDescription());
                     }
                 });
     }
@@ -484,30 +482,40 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         final View view = inflater.inflate(R.layout.edit_user_profile_switch, parent, false);
         ((TextView) view.findViewById(R.id.label)).setText(field.getLabel());
         ((TextView) view.findViewById(R.id.instructions)).setText(instructions);
-        final RadioGroup group = view.findViewById(R.id.options);
-        {
-            final RadioButton optionOne = view.findViewById(R.id.option_one);
-            final RadioButton optionTwo = view.findViewById(R.id.option_two);
-            optionOne.setText(field.getOptions().getValues().get(0).getName());
-            optionOne.setTag(field.getOptions().getValues().get(0).getValue());
-            optionTwo.setText(field.getOptions().getValues().get(1).getName());
-            optionTwo.setTag(field.getOptions().getValues().get(1).getValue());
-        }
-        for (int i = 0; i < group.getChildCount(); i++) {
-            final View child = group.getChildAt(i);
-            child.setEnabled(!readOnly);
-            if (child.getTag().equals(value)) {
-                group.check(child.getId());
+        final TabLayout group = view.findViewById(R.id.options);
+
+        final Tab optionOne = group.getTabAt(0);
+        final Tab optionTwo = group.getTabAt(1);
+
+        optionOne.setText(field.getOptions().getValues().get(0).getName());
+        optionOne.setTag(field.getOptions().getValues().get(0).getValue());
+        optionTwo.setText(field.getOptions().getValues().get(1).getName());
+        optionTwo.setTag(field.getOptions().getValues().get(1).getValue());
+
+        for (int i = 0; i < group.getTabCount(); i++) {
+            final Tab child = group.getTabAt(i);
+            if (child != null && value.equals(child.getTag())) {
+                child.select();
                 break;
             }
         }
         if (readOnly) {
             group.setEnabled(false);
         } else {
-            group.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            group.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
                 @Override
-                public void onCheckedChanged(RadioGroup group, int checkedId) {
-                    switchListener.onSwitch((String) group.findViewById(checkedId).getTag());
+                public void onTabSelected(Tab tab) {
+                    if (tab.getTag() != null) {
+                        switchListener.onSwitch((String) tab.getTag());
+                    }
+                }
+
+                @Override
+                public void onTabUnselected(Tab tab) {
+                }
+
+                @Override
+                public void onTabReselected(Tab tab) {
                 }
             });
         }
@@ -519,7 +527,7 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         final TextView textView = (TextView) inflater.inflate(R.layout.edit_user_profile_field, parent, false);
         final SpannableString formattedValue = new SpannableString(value);
         formattedValue.setSpan(new ForegroundColorSpan(parent.getResources().getColor(R.color.neutralXXDark)), 0, formattedValue.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        textView.setText(ResourceUtil.getFormattedString(parent.getResources(), R.string.edit_user_profile_field, new HashMap<String, CharSequence>() {{
+        textView.setText(ResourceUtil.getFormattedString(parent.getResources(), R.string.edit_user_profile_field, new HashMap<>() {{
             put("label", field.getLabel());
             put("value", formattedValue);
         }}));
@@ -531,26 +539,5 @@ public class EditUserProfileFragment extends BaseFragment implements BaseFragmen
         }
         parent.addView(textView);
         return textView;
-    }
-
-    @Override
-    public void onPermissionGranted(String[] permissions, int requestCode) {
-        switch (requestCode) {
-            case PermissionsUtil.CAMERA_PERMISSION_REQUEST:
-                startActivityForResult(helper.createCaptureIntent(getActivity()), CAPTURE_PHOTO_REQUEST);
-                break;
-            case PermissionsUtil.READ_STORAGE_PERMISSION_REQUEST:
-                final Intent galleryIntent = new Intent()
-                        .setType("image/*")
-                        .setAction(Intent.ACTION_GET_CONTENT);
-                startActivityForResult(galleryIntent, CHOOSE_PHOTO_REQUEST);
-                break;
-            default:
-                break;
-        }
-    }
-
-    @Override
-    public void onPermissionDenied(String[] permissions, int requestCode) {
     }
 }

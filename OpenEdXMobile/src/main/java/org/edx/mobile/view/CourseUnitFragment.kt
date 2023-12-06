@@ -4,8 +4,11 @@ import android.os.Bundle
 import androidx.annotation.NonNull
 import org.edx.mobile.base.BaseFragment
 import org.edx.mobile.core.IEdxEnvironment
+import org.edx.mobile.event.CourseOutlineRefreshEvent
+import org.edx.mobile.extenstion.serializable
 import org.edx.mobile.model.course.CourseComponent
 import org.edx.mobile.services.CourseManager
+import org.greenrobot.eventbus.EventBus
 import javax.inject.Inject
 
 abstract class CourseUnitFragment : BaseFragment() {
@@ -23,14 +26,19 @@ abstract class CourseUnitFragment : BaseFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        unit =
-            if (arguments == null) null else arguments?.getSerializable(Router.EXTRA_COURSE_UNIT) as CourseComponent
+        unit = arguments?.serializable(Router.EXTRA_COURSE_UNIT)
     }
 
     fun markComponentCompletion(isCompleted: Boolean) {
         unit?.let {
+            /* TODO: Fix the update cache mechanism, cuz this method returning course data
+                by-value(not by ref) that produce issue to update the course dashboard form the
+                app-level cache. To fix the problem need to introduce the optimized way to traverse
+                the course components (tree elements).
+            */
             courseManager?.getComponentByIdFromAppLevelCache(it.courseId, it.id)
                 ?.setCompleted(if (isCompleted) 1 else 0)
+            EventBus.getDefault().post(CourseOutlineRefreshEvent())
         }
     }
 
@@ -62,7 +70,6 @@ abstract class CourseUnitFragment : BaseFragment() {
     }
 
     interface HasComponent {
-        val component: CourseComponent?
         fun navigateNextComponent()
         fun navigatePreviousComponent()
 

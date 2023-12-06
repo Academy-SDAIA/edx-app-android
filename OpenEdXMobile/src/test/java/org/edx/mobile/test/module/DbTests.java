@@ -1,7 +1,16 @@
 package org.edx.mobile.test.module;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import androidx.test.core.app.ApplicationProvider;
+
 import org.edx.mobile.base.BaseTestCase;
 import org.edx.mobile.base.Injector;
+import org.edx.mobile.base.MainApplication;
 import org.edx.mobile.model.VideoModel;
 import org.edx.mobile.model.api.ProfileModel;
 import org.edx.mobile.model.db.DownloadEntry;
@@ -15,10 +24,6 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
-
-import androidx.test.core.app.ApplicationProvider;
-
 public class DbTests extends BaseTestCase {
 
     final Object lock = new Object();
@@ -29,7 +34,7 @@ public class DbTests extends BaseTestCase {
     @Override
     protected void inject(Injector injector) throws Exception {
         super.inject(injector);
-        loginPrefs = new LoginPrefs(context);
+        loginPrefs = MainApplication.getEnvironment(context).getLoginPrefs();
     }
 
     @Override
@@ -158,48 +163,6 @@ public class DbTests extends BaseTestCase {
         lock();
     }
 
-    @Test
-    public void testisAnyVideoDownloading() throws Exception {
-        db.clearDataByUser(username);
-        db.isAnyVideoDownloading(new DataCallback<Boolean>() {
-
-            @Override
-            public void onResult(Boolean result) {
-                assertNotNull(result);
-                assertFalse("something is downloading", result);
-                print( "result for Video AnyVideoDownloading is:" + result);
-                unlock();
-            }
-
-            @Override
-            public void onFail(Exception ex) {
-                fail(ex.getMessage());
-            }
-        });
-        lock();
-
-        DownloadEntry de = getDummyVideoModel();
-        // avoid duplicate videoId
-        de.downloaded = DownloadedState.DOWNLOADING;
-        db.addVideoData(de, null);
-
-        db.isAnyVideoDownloading(new DataCallback<Boolean>() {
-
-            @Override
-            public void onResult(Boolean result) {
-                assertNotNull(result);
-                assertTrue("Result for Any Video Downloading  is:" +result.toString(), result);
-                unlock();
-            }
-
-            @Override
-            public void onFail(Exception ex) {
-                fail(ex.getMessage());
-            }
-        });
-
-        lock();
-    }
     @Test
     public void testgetAllDownloadingVideosDmidList() throws Exception {
         db.clearDataByUser(username);

@@ -7,12 +7,13 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.launch
 import org.edx.mobile.exception.ErrorMessage
 import org.edx.mobile.http.HttpStatusException
 import org.edx.mobile.http.model.NetworkResponseCallback
 import org.edx.mobile.http.model.Result
+import org.edx.mobile.injection.DataSourceDispatcher
 import org.edx.mobile.model.course.CourseBannerInfoModel
 import org.edx.mobile.model.course.CourseDates
 import org.edx.mobile.model.course.ResetCourseDates
@@ -25,7 +26,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CourseDateViewModel @Inject constructor(
-    private val repository: CourseDatesRepository
+    private val repository: CourseDatesRepository,
+    @DataSourceDispatcher val dispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val _syncLoader = MutableLiveData<Event<Boolean>>()
@@ -48,8 +50,8 @@ class CourseDateViewModel @Inject constructor(
     val bannerInfo: LiveData<CourseBannerInfoModel?>
         get() = _bannerInfo
 
-    private val _resetCourseDates = MutableLiveData<ResetCourseDates?>()
-    val resetCourseDates: LiveData<ResetCourseDates?>
+    private val _resetCourseDates = MutableLiveData<Event<ResetCourseDates?>>()
+    val resetCourseDates: LiveData<Event<ResetCourseDates?>>
         get() = _resetCourseDates
 
     private val _errorMessage = MutableLiveData<ErrorMessage?>()
@@ -77,7 +79,7 @@ class CourseDateViewModel @Inject constructor(
         areEventsUpdated = updatedEvent
         _syncLoader.postEvent(true)
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(dispatcher) {
             courseDates.value?.peekContent()?.let { courseDates ->
                 courseDates.courseDateBlocks?.forEach { courseDateBlock ->
                     CalendarUtils.addEventsIntoCalendar(
@@ -180,7 +182,7 @@ class CourseDateViewModel @Inject constructor(
             callback = object : NetworkResponseCallback<ResetCourseDates> {
                 override fun onSuccess(result: Result.Success<ResetCourseDates>) {
                     if (result.isSuccessful && result.data != null) {
-                        _resetCourseDates.postValue(result.data)
+                        _resetCourseDates.postEvent(result.data)
                         fetchCourseDates(
                             courseId,
                             forceRefresh = true,

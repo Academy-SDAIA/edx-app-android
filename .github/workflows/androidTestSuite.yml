@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
 
       # Cache and restore the Gradle dependencies on multiple runs
       - name: Gradle cache
@@ -33,7 +33,7 @@ jobs:
       - name: Run tests
         run: |
           chmod +x gradlew
-          ./gradlew jacocoTestProdDebugUnitTestReport
+          ./gradlew jacocoProdDebugUnitTestReport
           ./gradlew copyUnitTestBuildArtifacts
 
       # Uploads the folder or file in path to GitHub
@@ -50,10 +50,11 @@ jobs:
         uses: codecov/codecov-action@v2
         with:
           directory: artifacts
-          files: jacocoTestProdDebugUnitTestReport.xml
+          files: jacocoProdDebugUnitTestReport.xml
           fail_ci_if_error: false
           verbose: true
 
+  # TODO: Re-enable this job when the Instrument Test functionality is restored - Remove 'if: false'
   android_screenshot:
     name: Android Instrumented Tests
     # The macOS VM provided by GitHub Actions has HAXM installed so we are able to create a new AVD
@@ -62,6 +63,7 @@ jobs:
     # Includes Screenshot Tests
     # Ref: https://github.com/marketplace/actions/android-emulator-runner
     runs-on: macos-11
+    if: false
 
     steps:
       # Checkouts the current branch for processing
@@ -73,7 +75,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: 'adopt'
-          java-version: '11'
+          java-version: '17'
 
       # Install Python 2.7 to support Pillow library for screenshot testing
       # Ref: https://github.com/facebook/screenshot-tests-for-android#requirements

@@ -8,8 +8,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.app.TaskStackBuilder;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import org.edx.mobile.BuildConfig;
@@ -28,6 +26,7 @@ import org.edx.mobile.model.discussion.DiscussionTopic;
 import org.edx.mobile.module.analytics.AnalyticsRegistry;
 import org.edx.mobile.module.notification.NotificationDelegate;
 import org.edx.mobile.module.prefs.LoginPrefs;
+import org.edx.mobile.module.prefs.UserPrefs;
 import org.edx.mobile.module.storage.IStorage;
 import org.edx.mobile.profiles.UserProfileActivity;
 import org.edx.mobile.util.Config;
@@ -35,7 +34,9 @@ import org.edx.mobile.util.EmailUtil;
 import org.edx.mobile.util.ResourceUtil;
 import org.edx.mobile.util.SecurityUtil;
 import org.edx.mobile.util.links.WebViewLink;
+import org.edx.mobile.view.app_nav.CourseUnitNavigationActivity;
 import org.edx.mobile.view.dialog.WebViewActivity;
+import org.edx.mobile.view.login.LoginActivity;
 import org.edx.mobile.whatsnew.WhatsNewActivity;
 
 import javax.inject.Inject;
@@ -43,7 +44,6 @@ import javax.inject.Singleton;
 
 @Singleton
 public class Router {
-    public static final String EXTRA_ANNOUNCEMENTS = "announcements";
     public static final String EXTRA_BUNDLE = "bundle";
     public static final String EXTRA_COURSE_ID = "course_id";
     public static final String EXTRA_COURSE_NAME = "course_name";
@@ -67,6 +67,7 @@ public class Router {
     public static final String EXTRA_ENROLLMENT_MODE = "enrollment_mode";
     public static final String EXTRA_IS_SELF_PACED = "is_self_paced";
     public static final String EXTRA_IS_UPGRADEABLE = "is_upgradeable";
+    public static final String EXTRA_SCREEN_TITLE = "screen_title";
 
     @Inject
     Config config;
@@ -76,6 +77,9 @@ public class Router {
 
     @Inject
     LoginPrefs loginPrefs;
+
+    @Inject
+    UserPrefs userPrefs;
 
     @Inject
     IStorage storage;
@@ -165,16 +169,21 @@ public class Router {
     }
 
     public void showCourseDashboardTabs(@NonNull Activity activity,
+                                        @Nullable EnrolledCoursesResponse model) {
+        showCourseDashboardTabs(activity, model, null, null, null, null, null);
+    }
+
+    public void showCourseDashboardTabs(@NonNull Activity activity,
                                         @Nullable EnrolledCoursesResponse model,
-                                        boolean announcements) {
-        showCourseDashboardTabs(activity, model, null, null, null, null, announcements, null);
+                                        @Nullable @ScreenDef String screenName) {
+        showCourseDashboardTabs(activity, model, null, null, null, null, screenName);
     }
 
     public void showCourseDashboardTabs(@NonNull Activity activity,
                                         @Nullable String courseId,
                                         @Nullable @ScreenDef String screenName) {
         activity.startActivity(CourseTabsDashboardActivity.newIntent(activity, null, courseId,
-                null, null, null, false, screenName));
+                null, null, null, screenName));
     }
 
     public void showCourseDashboardTabs(@NonNull Activity activity,
@@ -183,10 +192,9 @@ public class Router {
                                         @Nullable String componentId,
                                         @Nullable String topicId,
                                         @Nullable String threadId,
-                                        boolean announcements,
                                         @Nullable @ScreenDef String screenName) {
         activity.startActivity(CourseTabsDashboardActivity.newIntent(activity, model, courseId,
-                componentId, topicId, threadId, announcements, screenName));
+                componentId, topicId, threadId, screenName));
     }
 
     public void showCourseUpgradeWebViewActivity(@NonNull Context context,
@@ -199,68 +207,28 @@ public class Router {
         );
     }
 
-    /**
-     * FIXME - it will bring to different view in the future
-     *
-     * @param activity
-     * @param model
-     */
-    public void showCourseAnnouncement(Activity activity, EnrolledCoursesResponse model) {
-        final Bundle courseBundle = new Bundle();
-        courseBundle.putSerializable(EXTRA_COURSE_DATA, model);
-        courseBundle.putBoolean(EXTRA_ANNOUNCEMENTS, true);
-        final Intent courseDetail = new Intent(activity, CourseAnnouncementsActivity.class);
-        courseDetail.putExtra(EXTRA_BUNDLE, courseBundle);
-        courseDetail.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivity(courseDetail);
-    }
-
-    public void showCourseAnnouncementFromNotification(@NonNull Context context, @NonNull String courseId) {
-        final Bundle courseBundle = new Bundle();
-        courseBundle.putBoolean(Router.EXTRA_ANNOUNCEMENTS, true);
-        courseBundle.putString(Router.EXTRA_COURSE_ID, courseId);
-        final Intent courseDetail = new Intent(context, CourseAnnouncementsActivity.class).putExtra(EXTRA_BUNDLE, courseBundle);
-        // TODO: It's not essential, but we may want additional activities on the back-stack
-        TaskStackBuilder.create(context)
-                .addNextIntent(courseDetail)
-                .startActivities();
-    }
-
-    public void showCourseContainerOutline(Activity activity, EnrolledCoursesResponse courseData,
-                                           CourseUpgradeResponse courseUpgradeData,
-                                           String courseComponentId) {
-        Intent courseDetail = CourseOutlineActivity.newIntent(activity, courseData,
-                courseUpgradeData, courseComponentId, null, false);
-        //TODO - what's the most suitable FLAG?
-        // courseDetail.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivityForResult(courseDetail, -1);
-    }
-
-    public void showCourseContainerOutline(Fragment fragment, int requestCode,
-                                           EnrolledCoursesResponse courseData,
-                                           CourseUpgradeResponse courseUpgradeData,
-                                           String courseComponentId,
-                                           String lastAccessedId, boolean isVideosMode) {
-        Intent courseDetail = CourseOutlineActivity.newIntent(fragment.getActivity(),
+    public Intent getCourseOutlineIntent(Activity activity,
+                                         EnrolledCoursesResponse courseData,
+                                         CourseUpgradeResponse courseUpgradeData,
+                                         String courseComponentId,
+                                         String lastAccessedId, boolean isVideosMode) {
+        return CourseOutlineActivity.newIntent(activity,
                 courseData, courseUpgradeData, courseComponentId, lastAccessedId, isVideosMode);
-        //TODO - what's the most suitable FLAG?
-        // courseDetail.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        fragment.startActivityForResult(courseDetail, requestCode);
     }
 
-    public void showCourseUnitDetail(Fragment fragment, int requestCode, EnrolledCoursesResponse model,
-                                     CourseUpgradeResponse courseUpgradeData,
-                                     String courseComponentId, boolean isVideosMode) {
+    public Intent getCourseUnitDetailIntent(Activity activity, EnrolledCoursesResponse model,
+                                            CourseUpgradeResponse courseUpgradeData,
+                                            String courseComponentId, boolean isVideosMode) {
         Bundle courseBundle = new Bundle();
         courseBundle.putSerializable(EXTRA_COURSE_DATA, model);
         courseBundle.putParcelable(EXTRA_COURSE_UPGRADE_DATA, courseUpgradeData);
         courseBundle.putSerializable(EXTRA_COURSE_COMPONENT_ID, courseComponentId);
 
-        Intent courseDetail = new Intent(fragment.getActivity(), CourseUnitNavigationActivity.class);
-        courseDetail.putExtra(EXTRA_BUNDLE, courseBundle);
-        courseDetail.putExtra(EXTRA_IS_VIDEOS_MODE, isVideosMode);
-        courseDetail.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        fragment.startActivityForResult(courseDetail, requestCode);
+        Intent courseDetailIntent = new Intent(activity, CourseUnitNavigationActivity.class);
+        courseDetailIntent.putExtra(EXTRA_BUNDLE, courseBundle);
+        courseDetailIntent.putExtra(EXTRA_IS_VIDEOS_MODE, isVideosMode);
+        courseDetailIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        return courseDetailIntent;
     }
 
     public void showCourseDiscussionAddPost(@NonNull Activity activity, @Nullable DiscussionTopic discussionTopic, @NonNull EnrolledCoursesResponse courseData) {
@@ -378,8 +346,8 @@ public class Router {
      * @see #performManualLogout(Context, AnalyticsRegistry, NotificationDelegate)
      */
     public void forceLogout(Context context, AnalyticsRegistry analyticsRegistry, NotificationDelegate delegate) {
-        loginPrefs.clear();
-
+        userPrefs.clear();
+        loginPrefs.clearLogin();
         analyticsRegistry.trackUserLogout();
         analyticsRegistry.resetIdentifyUser();
 
@@ -405,13 +373,6 @@ public class Router {
         loginAPI.logOut();
         forceLogout(context, analyticsRegistry, delegate);
         SecurityUtil.clearUserData(context);
-    }
-
-    public void showHandouts(Activity activity, EnrolledCoursesResponse courseData) {
-        Intent handoutIntent = new Intent(activity, CourseHandoutActivity.class);
-        handoutIntent.putExtra(EXTRA_COURSE_DATA, courseData);
-        handoutIntent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivity(handoutIntent);
     }
 
     public void showUserProfile(@NonNull Context context, @NonNull String username) {
@@ -458,14 +419,6 @@ public class Router {
         activity.startActivity(WhatsNewActivity.newIntent(activity));
     }
 
-    public void showAccountActivity(@NonNull Activity activity) {
-        activity.startActivity(AccountActivity.newIntent(activity, null));
-    }
-
-    public void showAccountActivity(@NonNull Activity activity, @Nullable @ScreenDef String screenName) {
-        activity.startActivity(AccountActivity.newIntent(activity, screenName));
-    }
-
     public void showPaymentsInfoActivity(@NonNull Context context, @NonNull EnrolledCoursesResponse courseDate,
                                          @NonNull CourseUpgradeResponse courseUpgrade) {
         context.startActivity(PaymentsInfoActivity.Companion.newIntent(context, courseDate, courseUpgrade));
@@ -496,7 +449,7 @@ public class Router {
                 .append(String.format("%s %s", activity.getString(R.string.android_device_model), Build.MODEL))
                 .append(NEW_LINE).append(NEW_LINE)
                 .append(activity.getString(R.string.insert_feedback));
-        EmailUtil.openEmailClient(activity, to, subject, body.toString(), config);
+        EmailUtil.sendEmailIntent(activity, to, subject, body.toString());
     }
 
     public void showFeedbackScreen(
@@ -516,6 +469,6 @@ public class Router {
                 .append(NEW_LINE)
                 .append(NEW_LINE)
                 .append(activity.getString(R.string.insert_feedback));
-        EmailUtil.openEmailClient(activity, to, subject, body.toString(), config);
+        EmailUtil.sendEmailIntent(activity, to, subject, body.toString());
     }
 }

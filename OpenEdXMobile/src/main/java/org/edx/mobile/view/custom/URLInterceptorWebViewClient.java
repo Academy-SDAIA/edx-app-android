@@ -1,7 +1,6 @@
 package org.edx.mobile.view.custom;
 
 import android.annotation.TargetApi;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
@@ -17,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
 import org.edx.mobile.core.EdxDefaultModule;
+import org.edx.mobile.event.FileSelectionEvent;
 import org.edx.mobile.http.HttpStatus;
 import org.edx.mobile.logger.Logger;
 import org.edx.mobile.model.AjaxCallData;
@@ -24,13 +24,11 @@ import org.edx.mobile.module.analytics.AnalyticsRegistry;
 import org.edx.mobile.util.AppConstants;
 import org.edx.mobile.util.BrowserUtil;
 import org.edx.mobile.util.Config;
-import org.edx.mobile.util.ConfigUtil;
 import org.edx.mobile.util.FileUtil;
-import org.edx.mobile.util.NetworkUtil;
 import org.edx.mobile.util.links.WebViewLink;
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -152,7 +150,9 @@ public class URLInterceptorWebViewClient extends WebViewClient {
             @Override
             public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
                 URLInterceptorWebViewClient.this.filePathCallback = filePathCallback;
-                FileUtil.chooseFiles(activity, fileChooserParams.getAcceptTypes());
+                EventBus.getDefault().post(new FileSelectionEvent(
+                        FileUtil.getChooseFilesIntent(fileChooserParams.getAcceptTypes())
+                ));
                 return true;
             }
         });
@@ -289,16 +289,6 @@ public class URLInterceptorWebViewClient extends WebViewClient {
         if (completionCallback != null &&
                 AjaxCallData.isCompletionRequest(new AjaxCallData(HttpStatus.OK, request.getUrl().toString(), ""))) {
             completionCallback.blockCompletionHandler(true);
-        }
-        Context context = view.getContext().getApplicationContext();
-
-        // suppress external links on ZeroRated network
-        String url = request.getUrl().toString();
-        if (isExternalLink(url)
-                && !ConfigUtil.Companion.isWhiteListedURL(url, config)
-                && NetworkUtil.isOnZeroRatedNetwork(context, config)
-                && NetworkUtil.isConnectedMobile(context)) {
-            return new WebResourceResponse("text/html", StandardCharsets.UTF_8.name(), null);
         }
         return super.shouldInterceptRequest(view, request);
     }

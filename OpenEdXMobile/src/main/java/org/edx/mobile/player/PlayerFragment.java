@@ -40,7 +40,6 @@ import com.google.android.material.progressindicator.CircularProgressIndicator;
 import org.edx.mobile.BuildConfig;
 import org.edx.mobile.R;
 import org.edx.mobile.base.BaseFragment;
-import org.edx.mobile.base.MainApplication;
 import org.edx.mobile.core.IEdxEnvironment;
 import org.edx.mobile.googlecast.GoogleCastDelegate;
 import org.edx.mobile.interfaces.NetworkObserver;
@@ -48,8 +47,8 @@ import org.edx.mobile.logger.Logger;
 import org.edx.mobile.model.VideoModel;
 import org.edx.mobile.model.api.TranscriptModel;
 import org.edx.mobile.model.db.DownloadEntry;
-import org.edx.mobile.module.prefs.LoginPrefs;
-import org.edx.mobile.module.prefs.PrefManager;
+import org.edx.mobile.module.prefs.InfoPrefs;
+import org.edx.mobile.module.prefs.UserPrefs;
 import org.edx.mobile.util.AppConstants;
 import org.edx.mobile.util.BrowserUtil;
 import org.edx.mobile.util.DeviceSettingUtil;
@@ -90,6 +89,9 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
         IS_NETWORK_MESSAGE_DISPLAYED, IS_SHOWN_WIFI_SETTINGS_MESSAGE
     }
 
+    @Inject
+    UserPrefs userPrefs;
+
     private static final Logger logger = new Logger(PlayerFragment.class.getName());
     private static final String KEY_VIDEO = "video";
     private static final String KEY_PREPARED = "isPrepared";
@@ -100,7 +102,6 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
     private static final int MSG_TYPE_TICK = 2014;
     private static final int DELAY_TIME_MS = 1000;
     private static final int UNFREEZE_DELAY_MS = 300;
-    private static final int SUBTITLES_DISPLAY_DELAY_MS = 100;
 
     @Inject
     IEdxEnvironment environment;
@@ -181,7 +182,9 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        googleCastDelegate = GoogleCastDelegate.getInstance(environment.getAnalyticsRegistry());
+        if (environment.getConfig().isChromeCastEnabled()) {
+            googleCastDelegate = GoogleCastDelegate.getInstance(environment.getAnalyticsRegistry());
+        }
     }
 
     @Override
@@ -523,7 +526,8 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
         this.langList = LocaleUtils.getLanguageList(transcript);
         // request focus on audio channel, as we are starting playback
         requestAudioFocus();
-        String path = VideoUtil.getVideoPath(getActivity(), videoEntry);
+        String path = VideoUtil.getVideoPath(getActivity(), videoEntry,
+                userPrefs.getSpeedTestKBPS());
         try {
             if (videoEntry.isVideoForWebOnly) {
                 showVideoNotAvailable(VideoNotPlayMessageType.IS_VIDEO_ONLY_ON_WEB);
@@ -545,7 +549,7 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
 
             final long seekTo = videoEntry.getLastPlayedOffset();
             logger.debug("playing [seek=" + seekTo + "]: " + path);
-            if (googleCastDelegate.isConnected()) {
+            if (googleCastDelegate != null && googleCastDelegate.isConnected()) {
                 playVideoOnRemoteDevice(lastSavedPosition, true);
                 player.setUri(path, seekTo);
             } else if (prepareOnly)
@@ -794,7 +798,7 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
         }
 
         clearAllErrors();
-        player.setPlaybackSpeed(loginPrefs.getDefaultPlaybackSpeed());
+        player.setPlaybackSpeed(userPrefs.getPlaybackSpeed());
         if (subtitlesObj != null) {
             showClosedCaptionData(subtitlesObj);
         } else {
@@ -856,15 +860,15 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
         if (!environment.getConfig().getAppStoreUris().isEmpty() &&
                 environment.getConfig().isAppReviewsEnabled() &&
                 NetworkUtil.isConnected(getContext())) {
-            final PrefManager.AppInfoPrefManager appPrefs = new PrefManager.AppInfoPrefManager(MainApplication.application);
-            final float appRating = appPrefs.getAppRating();
+            final InfoPrefs infoPrefs = environment.getInfoPrefs();
+            final float appRating = infoPrefs.getAppRating();
             // If user has not given rating yet, open dialog
             // consider not rated if rating is -1 or less (default is -1)
             if (appRating <= AppConstants.APP_NOT_RATED_THRESHOLD) {
                 showRatingDialog();
             } else if (appRating <= AppConstants.APP_NEGATIVE_RATING_THRESHOLD) {
                 try {
-                    final Version oldVersion = new Version(appPrefs.getLastRatedVersion());
+                    final Version oldVersion = new Version(infoPrefs.getLastRatedVersion());
                     final Version curVersion = new Version(BuildConfig.VERSION_NAME);
                     if (oldVersion.isNMinorVersionsDiff(curVersion, AppConstants.MINOR_VERSIONS_DIFF_REQUIRED_FOR_NEGATIVE_RATERS)) {
                         // App updated to 2 minor versions
@@ -1027,59 +1031,6 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
     public void onOffline() {
         // nothing to do
         showNetworkError();
-    }
-
-    public void onConnectedToMobile() {
-        boolean wifiPreference = environment.getUserPrefs().isDownloadOverWifiOnly();
-        if (!NetworkUtil.isOnZeroRatedNetwork(getActivity(), environment.getConfig()) && wifiPreference) {
-            //If the user is connected to a non zero rated mobile data network and his wifi preference is on,
-            //then prompt user to set change his wifi settings
-            showWifiSettingsMessage();
-        } else {
-            handleNetworkChangeVideoPlayback();
-        }
-    }
-
-    public void onConnectedToWifi() {
-        //Start playing video is user is connected to wifi
-        handleNetworkChangeVideoPlayback();
-    }
-
-    /**
-     * This method handles video playback on network change callbacks
-     */
-    private void handleNetworkChangeVideoPlayback() {
-        hideNetworkError();
-        try {
-            if (player != null) {
-                if (!curMessageTypes.contains(VideoNotPlayMessageType.IS_VIDEO_MESSAGE_DISPLAYED)) {
-                    if ((!player.isPaused()
-                            && !player.isPlaying() && !player.isPlayingLocally())
-                            || (player.isInError() || player.isReset())) {
-                        showProgress();
-                    }
-                }
-                if (player.isInError() || player.isReset()) {
-                    //If player is either in error state or has been reset, restart the player with current position
-                    player.restart(currentPosition);
-                }
-            }
-        } catch (Exception e) {
-            logger.error(e);
-        }
-    }
-
-    /**
-     * LectureComplete dialog was creating problems if orientation is allowed when dialog is shown.
-     * So, locked orientation while the LectureComplete dialog is showing.
-     */
-    public void lockOrientation() {
-        orientationLocked = true;
-        if (isScreenLandscape()) {
-            enterFullScreen();
-        } else {
-            exitFullScreen();
-        }
     }
 
     public void unlockOrientation() {
@@ -1375,8 +1326,8 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
             @Override
             public void onItemClicked(Float speed) {
                 if (player != null) {
-                    float oldSpeed = loginPrefs.getDefaultPlaybackSpeed();
-                    loginPrefs.saveDefaultPlaybackSpeed(speed);
+                    float oldSpeed = userPrefs.getPlaybackSpeed();
+                    userPrefs.setPlaybackSpeed(speed);
                     player.setPlaybackSpeed(speed);
 
                     environment.getAnalyticsRegistry().trackVideoSpeed(videoEntry.videoId,
@@ -1389,7 +1340,7 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
             public void onCancelClicked() {
                 speedDialogFragment.dismiss();
             }
-        }, loginPrefs.getDefaultPlaybackSpeed());
+        }, userPrefs.getPlaybackSpeed());
         speedDialogFragment.show(getFragmentManager(), "video_speed_dialog");
         speedDialogFragment.setCancelable(true);
     }
@@ -1429,7 +1380,7 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
                 public void onCancelClicked() {
                     closedCaptionsEnabled = false;
                     hideClosedCaptioning();
-                    setSubtitleLanguage(getString(R.string.lbl_cc_none));
+                    setSubtitleLanguage(UserPrefs.NONE);
                     if (player != null) {
                         environment.getAnalyticsRegistry().trackHideTranscript(videoEntry.videoId,
                                 player.getCurrentPosition() / AppConstants.MILLISECONDS_PER_SECOND,
@@ -1483,16 +1434,12 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
         }
     }
 
-    @Inject
-    LoginPrefs loginPrefs;
-
-    @Nullable
     private String getSubtitleLanguage() {
-        return loginPrefs.getSubtitleLanguage();
+        return userPrefs.getSubtitleLanguage();
     }
 
     private void setSubtitleLanguage(@NonNull String language) {
-        loginPrefs.setSubtitleLanguage(language);
+        userPrefs.setSubtitleLanguage(language);
     }
 
     @Override
@@ -1719,7 +1666,7 @@ public class PlayerFragment extends BaseFragment implements IPlayerListener, Ser
         this.subtitlesObj = subtitles;
         resetClosedCaptioning();
         if (subtitlesObj != null) {
-            closedCaptionsEnabled = true;
+            closedCaptionsEnabled = userPrefs.getHasSubtitleLanguage();
             if (player != null) {
                 environment.getAnalyticsRegistry().trackShowTranscript(videoEntry.videoId,
                         player.getCurrentPosition() / AppConstants.MILLISECONDS_PER_SECOND,

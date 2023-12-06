@@ -18,6 +18,7 @@ import org.edx.mobile.core.IEdxEnvironment
 import org.edx.mobile.databinding.DialogFullscreenLoaderBinding
 import org.edx.mobile.event.IAPFlowEvent
 import org.edx.mobile.exception.ErrorMessage
+import org.edx.mobile.extenstion.serializable
 import org.edx.mobile.model.iap.IAPFlowData
 import org.edx.mobile.module.analytics.Analytics
 import org.edx.mobile.module.analytics.InAppPurchasesAnalytics
@@ -72,7 +73,7 @@ class FullscreenLoaderDialogFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, args: Bundle?) {
         super.onViewCreated(view, args)
-        iapFlowData = arguments?.getSerializable(KEY_IAP_DATA) as IAPFlowData?
+        iapFlowData = arguments?.serializable(KEY_IAP_DATA)
         loaderStartTime = arguments?.getLong(LOADER_START_TIME, Calendar.getInstance().timeInMillis)
             ?: Calendar.getInstance().timeInMillis
         intiViews()
@@ -123,7 +124,7 @@ class FullscreenLoaderDialogFragment : DialogFragment() {
         EventBus.getDefault().post(IAPFlowEvent(IAPFlowData.IAPAction.PURCHASE_FLOW_COMPLETE))
     }
 
-    fun closeLoader() {
+    fun closeLoader(listener: FullScreenDismissListener? = null) {
         if (dismissTimer == null) {
             dismissTimer = Timer("", false).schedule(getRemainingVisibleTime()) {
                 iapAnalytics.trackIAPEvent(Analytics.Events.IAP_COURSE_UPGRADE_SUCCESS)
@@ -131,6 +132,7 @@ class FullscreenLoaderDialogFragment : DialogFragment() {
                 iapAnalytics.trackIAPEvent(Analytics.Events.IAP_UNLOCK_UPGRADED_CONTENT_REFRESH_TIME)
                 iapFlowData?.clear()
                 dismiss()
+                listener?.onDismiss()
             }
         }
     }
@@ -164,6 +166,11 @@ class FullscreenLoaderDialogFragment : DialogFragment() {
             0
     }
 
+    fun closeTimer() {
+        dismissTimer?.cancel()
+        dismiss()
+    }
+
     companion object {
         const val TAG = "FULLSCREEN_LOADER"
         private const val LOADER_START_TIME = "LOADER_START_TIME"
@@ -181,5 +188,9 @@ class FullscreenLoaderDialogFragment : DialogFragment() {
         @JvmStatic
         fun getRetainedInstance(fragmentManager: FragmentManager?): FullscreenLoaderDialogFragment? =
             fragmentManager?.findFragmentByTag(TAG) as FullscreenLoaderDialogFragment?
+    }
+
+    interface FullScreenDismissListener {
+        fun onDismiss()
     }
 }

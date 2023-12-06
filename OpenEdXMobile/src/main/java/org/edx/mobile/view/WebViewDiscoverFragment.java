@@ -2,19 +2,23 @@ package org.edx.mobile.view;
 
 import android.os.Bundle;
 import android.text.TextUtils;
-import android.view.KeyEvent;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.webkit.URLUtil;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.edx.mobile.R;
 import org.edx.mobile.databinding.FragmentWebviewDiscoveryBinding;
 import org.edx.mobile.event.MainDashboardRefreshEvent;
 import org.edx.mobile.event.NetworkConnectivityChangeEvent;
+import org.edx.mobile.extenstion.CollapsingToolbarStatListener;
+import org.edx.mobile.extenstion.ToolbarExtKt;
 import org.edx.mobile.http.notifications.FullScreenErrorNotification;
 import org.edx.mobile.model.api.EnrolledCoursesResponse;
 import org.edx.mobile.util.UiUtils;
@@ -35,6 +39,20 @@ public class WebViewDiscoverFragment extends BaseWebViewFragment {
     protected FragmentWebviewDiscoveryBinding binding;
     private ViewTreeObserver.OnScrollChangedListener onScrollChangedListener;
 
+    private final OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(false) {
+        @Override
+        public void handleOnBackPressed() {
+            if (binding.webview.canGoBack()) {
+                binding.webview.goBack();
+            } else {
+                // Disable the current callback to enable triggering the callback on the
+                // MainTabsDashboardFragment
+                onBackPressedCallback.setEnabled(false);
+                requireActivity().onBackPressed();
+            }
+        }
+    };
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -45,8 +63,11 @@ public class WebViewDiscoverFragment extends BaseWebViewFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        initTitle();
         setWebViewActionListener();
-        setWebViewBackPressListener();
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(), onBackPressedCallback
+        );
 
         // Check for search query in extras
         String searchQueryExtra = null;
@@ -76,6 +97,25 @@ public class WebViewDiscoverFragment extends BaseWebViewFragment {
         }
     }
 
+    private void initTitle() {
+        binding.toolbar.tvTitle.setText(getString(R.string.label_explore_the_catalog));
+        binding.toolbar.tvTitle.setTextSize(TypedValue.COMPLEX_UNIT_PX, getResources().getDimension(R.dimen.edx_large));
+
+        ToolbarExtKt.setTitleStateListener(binding.toolbar.appbar,
+                binding.toolbar.collapsingToolbar,
+                new CollapsingToolbarStatListener() {
+                    @Override
+                    public void onExpanded() {
+                        binding.toolbar.getRoot().setVisibility(View.INVISIBLE);
+                    }
+
+                    @Override
+                    public void onCollapsed() {
+                        binding.toolbar.getRoot().setVisibility(View.VISIBLE);
+                    }
+                });
+    }
+
     public void setWebViewActionListener() {
         client.setActionListener(new DefaultActionListener(getActivity(), progressWheel,
                 new DefaultActionListener.EnrollCallback() {
@@ -92,18 +132,6 @@ public class WebViewDiscoverFragment extends BaseWebViewFragment {
                     public void onUserNotLoggedIn(@NonNull String courseId, boolean emailOptIn) {
                     }
                 }));
-    }
-
-    private void setWebViewBackPressListener() {
-        binding.webview.setOnKeyListener((v, keyCode, event) -> {
-            if (event.getAction() == KeyEvent.ACTION_DOWN) {
-                if (keyCode == KeyEvent.KEYCODE_BACK && binding.webview.canGoBack()) {
-                    binding.webview.goBack();
-                    return true;
-                }
-            }
-            return false;
-        });
     }
 
     @Override
@@ -165,6 +193,18 @@ public class WebViewDiscoverFragment extends BaseWebViewFragment {
                 onScrollChangedListener = () -> {
                     binding.swipeContainer.setEnabled((binding.webview.getScrollY() == 0));
                 });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        onBackPressedCallback.setEnabled(true);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        onBackPressedCallback.setEnabled(false);
     }
 
     @Override

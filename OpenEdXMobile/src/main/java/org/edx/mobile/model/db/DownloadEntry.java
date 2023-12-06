@@ -9,7 +9,6 @@ import org.edx.mobile.model.VideoModel;
 import org.edx.mobile.model.api.EncodingsModel;
 import org.edx.mobile.model.api.TranscriptModel;
 import org.edx.mobile.model.download.NativeDownloadModel;
-import org.edx.mobile.module.prefs.PrefManager;
 import org.edx.mobile.util.JavaUtil;
 
 
@@ -97,7 +96,11 @@ public class DownloadEntry implements SectionItemInterface, VideoModel {
     public boolean isDownloaded() {
         return (downloaded == DownloadedState.DOWNLOADED);
     }
-    
+
+    public boolean isDownloading() {
+        return (downloaded == DownloadedState.DOWNLOADING);
+    }
+
     @Override
     public String toString() {
         return String.format("dmid=%d, title=%s, path=%s, url=%s, size=%d, duration=%d", dmId, title, filepath, url, size, duration);
@@ -244,16 +247,13 @@ public class DownloadEntry implements SectionItemInterface, VideoModel {
         duration = video.getDuration();
     }
 
-    public String getBestEncodingUrl(Context context) {
+    public String getBestEncodingUrl(Context context, Float speedTestKBPS) {
         if (!TextUtils.isEmpty(url_hls)) {
             return url_hls;
         }
 
-        PrefManager prefs = new PrefManager(context, PrefManager.Pref.WIFI);
-        float kbs = prefs.getFloat(PrefManager.Key.SPEED_TEST_KBPS, 0.0f);
-        float thresholdKps = (float)context.getResources().getInteger(R.integer.threshold_kbps_for_video);
-
-        EncodingsModel.EncodingLevel level = kbs > thresholdKps ?
+        float thresholdKps = (float) context.getResources().getInteger(R.integer.threshold_kbps_for_video);
+        EncodingsModel.EncodingLevel level = speedTestKBPS > thresholdKps ?
                 EncodingsModel.EncodingLevel.HIGH : EncodingsModel.EncodingLevel.LOW;
 
         switch (level) {
