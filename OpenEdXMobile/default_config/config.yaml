@@ -1,9 +1,31 @@
-API_HOST_URL: 'https://learn-stage.tndy.academy/' # localhost is 10.0.2.2 in Android
-ENVIRONMENT_DISPLAY_NAME: 'Localhost'
-PLATFORM_NAME: 'SDAIA MVP'
-PLATFORM_DESTINATION_NAME: 'example.com'
-FEEDBACK_EMAIL_ADDRESS: 'support@example.com'
+API_HOST_URL: 'https://learn-stage.tndy.academy/' #https://learn-stage.tndy.academy/ , https://learn.tndy.academy
+ENVIRONMENT_DISPLAY_NAME: ''
+FEEDBACK_EMAIL_ADDRESS: 'support@sdaia.academy'
+PLATFORM_NAME: 'SDAIA'
+IS_EDX_ENABLED: false
 API_URL_VERSION:
-  BLOCKS: "v2"
-  REGISTRATION: "v2"
-  ENROLLMENTS: "v2"
+  BLOCKS: 'v2'
+  REGISTRATION: 'v2'
+  ENROLLMENTS: 'v2'
+DISCOVERY:
+  TYPE: 'native'
+ANNOUNCEMENTS_ENABLED: true
+BADGES_ENABLED: false
+CERTIFICATES_ENABLED: true
+COURSE_DATES_ENABLED: true
+COURSE_SHARING_ENABLED: true
+COURSE_VIDEOS_ENABLED: true
+DISCUSSIONS_ENABLED: true
+DISCUSSIONS_ENABLE_PROFILE_PICTURE_PARAM: true
+PUSH_NOTIFICATIONS: true
+NEW_LOGISTRATION_ENABLED: false
+REGISTRATION_ENABLED: false
+USER_PROFILES_ENABLED: true
+VIDEO_TRANSCRIPT_ENABLED: true
+WHATS_NEW_ENABLED: false
+PROGRAM:
+  ENABLED: true
+  PROGRAM_URL: 'https://learn-stage.tndy.academy/dashboard/programs_fragment/?mobile_only=true'
+  PROGRAM_DETAIL_URL_TEMPLATE: 'https://learn-stage.tndy.academy/dashboard/{path_id}?mobile_only=true'
+YOUTUBE_PLAYER:
+  ENABLED: true

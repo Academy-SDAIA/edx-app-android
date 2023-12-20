@@ -59,15 +59,15 @@
   <string name="login_failed">Bitte stellen sicher, dass deine E-Mail-Adresse korrekt ist und versuche es dann erneut.</string>
   <!--License Agreement related string on Login and Regiser screens-->
   <!--Create account agreement. Followed by list of agreement names like "End User License Agreement"-->
-  <string name="by_creating_account">Mit der Erstellung eines Kontos stimmen Sie der {license} und {tos_and_honor_code} zu und erkennen an, dass {platform_name} und jedes Mitglied Ihre persönlichen Daten in Übereinstimmung mit der {privacy_policy} verarbeitet.</string>
+  <string name="by_creating_account">Mit der Erstellung eines Kontos stimmen Sie der {license} und {tos_and_honor_code} zu und erkennen an, dass {platform_name} und jedes Mitglied Ihre persönlichen Daten in Übereinstimmung mit der {AuthResponse} verarbeitet.</string>
   <!--Sign In agreement. Followed by list of agreement names like "End User License Agreement"-->
-  <string name="by_signing_in">Indem Sie sich bei dieser App anmelden, stimmen Sie der {license} und {tos_and_honor_code} zu und erkennen an, dass {platform_name} und jedes Mitglied Ihre persönlichen Daten in Übereinstimmung mit der {privacy_policy} verarbeitet.</string>
+  <string name="by_signing_in">Indem Sie sich bei dieser App anmelden, stimmen Sie der {license} und {tos_and_honor_code} zu und erkennen an, dass {platform_name} und jedes Mitglied Ihre persönlichen Daten in Übereinstimmung mit der {AuthResponse} verarbeitet.</string>
   <!--Label for End User License Agreement-->
   <string name="licensing_agreement">Endbenutzer-Lizenzvertrag von {platform_name}</string>
   <!--Label for Terms of Service and Honor Code-->
   <string name="tos_and_honor_code">{platform_name} Nutzungsbedingungen und Verhaltenskodex</string>
   <!--Label for Privacy Policy-->
-  <string name="privacy_policy">Datenschutzbestimmungen</string>
+  <string name="AuthResponse">Datenschutzbestimmungen</string>
   <string name="login_title">Anmelden</string>
   <!--Accessible content description of close button on Sign in and Sign up screen-->
   <string name="close">Schließen</string>

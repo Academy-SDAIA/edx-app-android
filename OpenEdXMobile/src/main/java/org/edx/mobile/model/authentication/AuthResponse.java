@@ -28,8 +28,7 @@ public class AuthResponse implements Serializable {
     // Non-API field
     public Long accessTokenExpiresAt = Long.MAX_VALUE;
 
-    public boolean isSuccess() {
-        return (error == null && access_token != null);
+    public boolean isSuccess() {return ((error == null || error.isEmpty()) && access_token != null);
     }
 
     public static class Deserializer implements JsonDeserializer<AuthResponse> {

@@ -10,10 +10,20 @@ import kotlinx.coroutines.launch
 import org.edx.mobile.authentication.LoginAPI
 import org.edx.mobile.core.IEdxEnvironment
 import org.edx.mobile.exception.ErrorMessage
+import org.edx.mobile.http.model.NetworkResponseCallback
+import org.edx.mobile.http.model.Result
+import org.edx.mobile.model.authentication.AuthResponse
+import org.edx.mobile.model.course.ResetCourseDates
+import org.edx.mobile.model.nafath.NafathInitiateRequestModel
+import org.edx.mobile.model.nafath.NafathCheckStatusModel
+import org.edx.mobile.model.nafath.NafathRegisterUser
+import org.edx.mobile.model.nafath.NafathRegisterUserCheckStatusRequest
+import org.edx.mobile.model.nafath.NafathRegisterUserRequest
 import org.edx.mobile.repository.AuthRepository
 import org.edx.mobile.social.SocialLoginDelegate.Feature
 import org.edx.mobile.util.observer.Event
 import org.edx.mobile.util.observer.postEvent
+
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,6 +43,18 @@ class AuthViewModel @Inject constructor(
 
     private val _socialLoginErrorMessage = MutableLiveData<Event<ErrorMessage>>()
     val socialLoginErrorMessage: LiveData<Event<ErrorMessage>> = _socialLoginErrorMessage
+
+    private val _initiateRequest = MutableLiveData<Event<NafathInitiateRequestModel>>()
+    val initiateRequest: LiveData<Event<NafathInitiateRequestModel>> = _initiateRequest
+
+    private val _checkStatus = MutableLiveData<Event<NafathCheckStatusModel>>()
+    val checkStatus: LiveData<Event<NafathCheckStatusModel>> = _checkStatus
+
+    private val _initRegisterUser = MutableLiveData<Event<NafathRegisterUser>>()
+    val initRegisterUser: LiveData<Event<NafathRegisterUser>> = _initRegisterUser
+
+    private val _initCheckStatusRegisterUser = MutableLiveData<Event<NafathCheckStatusModel>>()
+    val initCheckStatusRegisterUser: LiveData<Event<NafathCheckStatusModel>> = _initCheckStatusRegisterUser
 
     private val _showProgress = MutableLiveData<Event<Boolean>>()
     val showProgress: LiveData<Event<Boolean>> = _showProgress
@@ -95,4 +117,133 @@ class AuthViewModel @Inject constructor(
             _showProgress.postEvent(false)
         }
     }
+
+
+
+
+    fun InitiateRequest(nafathId: String) {
+        _showProgress.postEvent(true)
+        viewModelScope.launch {
+            authRepository.InitiateRequest(nafathId, object: NetworkResponseCallback<NafathInitiateRequestModel>{
+                override fun onSuccess(result: Result.Success<NafathInitiateRequestModel>) {
+                    result?.let {
+                        if (it.code==200){
+                            _initiateRequest.postEvent(result.data!!)
+                        }else{
+                            _initiateRequest.postEvent(NafathInitiateRequestModel("","","",it.code.toString(),it.message))
+                        }
+
+                    }
+                }
+                override fun onError(error: Result.Error) {
+                    _initiateRequest.postEvent(NafathInitiateRequestModel("","","","",""))
+                }
+
+            })
+            _showProgress.postEvent(false)
+        }
+    }
+
+    fun checkStatus(map: HashMap<String,String>) {
+        _showProgress.postEvent(true)
+        viewModelScope.launch {
+
+            authRepository.checkStatus(map, object: NetworkResponseCallback<NafathCheckStatusModel>{
+                override fun onSuccess(result: Result.Success<NafathCheckStatusModel>) {
+                    result?.let {
+                        if (it.code ==200){
+                            _checkStatus.postEvent(result.data!!)
+                        }else{
+                            _checkStatus.postEvent(NafathCheckStatusModel("","",it.code.toString(),it.message))
+                        }
+
+                    }
+                }
+                override fun onError(error: Result.Error) {
+                 _checkStatus.postEvent(NafathCheckStatusModel("","","",""))
+                }
+
+            })
+            _showProgress.postEvent(false)
+        }
+    }
+
+    fun registerUser(nafathId: NafathRegisterUserRequest) {
+        _showProgress.postEvent(true)
+        viewModelScope.launch {
+            authRepository.registerUser(nafathId, object: NetworkResponseCallback<NafathRegisterUser>{
+                override fun onSuccess(result: Result.Success<NafathRegisterUser>) {
+                    result.let {
+                        if (it.code==201){
+                            _initRegisterUser.postEvent(it.data!!)
+                        }else{
+                           _initRegisterUser.postEvent(NafathRegisterUser(it.message,it.code.toString()))
+                        }
+
+                    }
+                }
+                override fun onError(error: Result.Error) {
+                }
+            })
+            _showProgress.postEvent(false)
+        }
+    }
+
+
+
+    fun registerUserCheckStatus(nafathId: NafathRegisterUserCheckStatusRequest) {
+        _showProgress.postEvent(true)
+        viewModelScope.launch {
+
+            authRepository.registerUserCheckStatus(nafathId, object: NetworkResponseCallback<NafathCheckStatusModel>{
+                override fun onSuccess(result: Result.Success<NafathCheckStatusModel>) {
+
+                    result.let {
+
+                        if (it.code ==200){
+                            _initCheckStatusRegisterUser.postEvent(it.data!!)
+                        }else{
+                            _initCheckStatusRegisterUser.postEvent(NafathCheckStatusModel("","",it.code.toString(),it.message))
+                        }
+                    }
+                }
+
+                override fun onError(error: Result.Error) {
+                    _initCheckStatusRegisterUser.postEvent(NafathCheckStatusModel("","","",""))
+                }
+
+            })
+            _showProgress.postEvent(false)
+        }
+    }
+
+    fun loginUsingNafath(map: HashMap<String,String>) {
+//        _showProgress.postEvent(true)
+//        viewModelScope.launch {
+//
+//            authRepository.loginUsingNafath(map, object: NetworkResponseCallback<AuthResponse>{
+//                override fun onSuccess(result: Result.Success<AuthResponse>) {
+//                    result.let {
+//                        _onLogin.postEvent(it.isSuccessful)
+//
+//                    }
+//                }
+//                override fun onError(error: Result.Error) {
+//                    _errorMessage.postEvent(ErrorMessage(0,error.throwable))
+//                }
+//            })
+//            _showProgress.postEvent(false)
+//        }
+        _showProgress.postEvent(true)
+        viewModelScope.launch {
+            val response = kotlin.runCatching { authRepository.loginUsingNafath(map) }
+            response.onSuccess {
+                _onLogin.postEvent(it.isSuccess)
+            }.onFailure {
+                _errorMessage.postEvent(ErrorMessage(0, it))
+            }
+            _showProgress.postEvent(false)
+        }
+    }
+
 }

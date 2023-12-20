@@ -137,4 +137,5 @@ interface CourseService {
         @Path("course_id") courseId: String,
         @Body courseBody: Map<String, Boolean>
     ): Call<Void>
+
 }

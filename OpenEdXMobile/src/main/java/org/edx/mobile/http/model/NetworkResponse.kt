@@ -20,6 +20,7 @@ sealed class Result<out R> {
  * Ref: https://stackoverflow.com/questions/60004591/return-data-from-retrofit-onresponse
  */
 interface NetworkResponseCallback<T> {
+
     fun onSuccess(result: Result.Success<T>)
     fun onError(error: Result.Error)
 }

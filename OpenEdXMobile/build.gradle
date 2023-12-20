@@ -260,7 +260,7 @@ dependencies {
      * Following link explains setting up LeakCanary for different product flavors:
      * https://square.github.io/leakcanary/recipes/#setting-up-leakcanary-for-different-product-flavors
      */
-    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.7"
+ //   debugImplementation "com.squareup.leakcanary:leakcanary-android:2.7"
 
     // Hilt build dependencies
     implementation "com.google.dagger:hilt-android:$hilt_version"
@@ -271,6 +271,9 @@ dependencies {
     // For local unit tests
     testImplementation "com.google.dagger:hilt-android-testing:$hilt_version"
     kaptTest "com.google.dagger:hilt-compiler:$hilt_version"
+    //Lottie Animation
+    implementation 'com.airbnb.android:lottie:5.0.3'
+
 }
 
 configurations {

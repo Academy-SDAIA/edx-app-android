@@ -38,7 +38,7 @@
     <!--  Heading of Privacy Fields  -->
     <string name="label_privacy">السرية</string>
     <!--  Label of Privacy Policy Button  -->
-    <string name="label_privacy_policy">سياسة الخصوصية</string>
+    <string name="label_AuthResponse">سياسة الخصوصية</string>
     <!--  Label of Cookie Policy Button  -->
     <string name="label_cookie_policy">سياسة ملفات تعريف الارتباط</string>
     <!--  Label of Data Consent Button  -->

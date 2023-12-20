@@ -1,6 +1,7 @@
 package org.edx.mobile.view;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 
@@ -32,14 +33,23 @@ public class LaunchActivity extends BaseFragmentActivity {
                 startActivity(environment.getRouter().getLogInIntent());
             }
         });
-        binding.signUpBtn.setOnClickListener(new OnClickListener() {
+
+
+        new Handler().postDelayed(new Runnable() {
             @Override
-            public void onClick(View v) {
-                environment.getAnalyticsRegistry().trackUserSignUpForAccount();
-                startActivity(environment.getRouter().getRegisterIntent());
+            public void run() {
+                startActivity(environment.getRouter().getLogInIntent());
+                finish();
             }
-        });
-        environment.getAnalyticsRegistry().trackScreenView(Analytics.Screens.LAUNCH_ACTIVITY);
+        }, 3000);
+//        binding.signUpBtn.setOnClickListener(new OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                environment.getAnalyticsRegistry().trackUserSignUpForAccount();
+//                startActivity(environment.getRouter().getRegisterIntent());
+//            }
+//        });
+     //   environment.getAnalyticsRegistry().trackScreenView(Analytics.Screens.LAUNCH_ACTIVITY);
     }
 
     @Override

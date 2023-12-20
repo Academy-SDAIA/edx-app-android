@@ -13,6 +13,12 @@ import org.edx.mobile.model.api.ProfileModel;
 import org.edx.mobile.model.api.ResetPasswordResponse;
 import org.edx.mobile.model.api.UnacknowledgedNoticeResponse;
 import org.edx.mobile.model.authentication.AuthResponse;
+import org.edx.mobile.model.course.ResetCourseDates;
+import org.edx.mobile.model.nafath.NafathInitiateRequestModel;
+import org.edx.mobile.model.nafath.NafathCheckStatusModel;
+import org.edx.mobile.model.nafath.NafathRegisterUser;
+import org.edx.mobile.model.nafath.NafathRegisterUserCheckStatusRequest;
+import org.edx.mobile.model.nafath.NafathRegisterUserRequest;
 import org.edx.mobile.module.prefs.LoginPrefs;
 import org.edx.mobile.module.registration.model.RegistrationDescription;
 
@@ -27,6 +33,7 @@ import dagger.hilt.components.SingletonComponent;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
+import retrofit2.http.Body;
 import retrofit2.http.Field;
 import retrofit2.http.FieldMap;
 import retrofit2.http.FormUrlEncoded;
@@ -157,4 +164,33 @@ public interface LoginService {
     @NonNull
     @GET(ApiConstants.URL_UNACKNOWLEDGED_NOTICE)
     Call<UnacknowledgedNoticeResponse> getUnacknowledgedNotice();
+
+//    @POST("/api/completion/v1/completion-batch")
+//    fun initiateRequest(@Body courseBody: Map<String, String>): Call<JSONObject>
+
+
+    @NonNull
+    @FormUrlEncoded
+    @POST(ApiConstants.NAFATH_INITIATE_REQUEST)
+    Call<NafathInitiateRequestModel> initiateRequest(@Field("nafath_id") String nafath_id);
+
+    @NonNull
+    @FormUrlEncoded
+    @POST(ApiConstants.NAFATH_CHECK_STATUS)
+    Call<NafathCheckStatusModel> checkStatus(@FieldMap Map<String, String> parameters);
+
+    @NonNull
+    @POST(ApiConstants.NAFATH_REGISTER_USER)
+    Call<NafathRegisterUser> registerUser(@Body NafathRegisterUserRequest nafath_id);
+
+
+
+    @NonNull
+    @POST(ApiConstants.NAFATH_REGISTER_USER_CHECK_STATUS)
+    Call<NafathCheckStatusModel> registerUserCheckStatus(@Body NafathRegisterUserCheckStatusRequest nafath_id);
+
+    @NonNull
+    @FormUrlEncoded
+    @POST(ApiConstants.NAFATH_GET_JWT_TOKEN)
+    Call<AuthResponse> getJwtToken(@FieldMap Map<String, String> parameters);
 }

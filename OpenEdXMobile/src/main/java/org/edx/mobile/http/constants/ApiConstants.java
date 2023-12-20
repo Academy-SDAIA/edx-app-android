@@ -43,6 +43,11 @@ public class ApiConstants {
 
     public static final String URL_UNACKNOWLEDGED_NOTICE = "/notices/api/v1/unacknowledged?mobile=true";
 
+    public static final String NAFATH_INITIATE_REQUEST = "/nafath/api/v1/initiate_request";
+    public static final String NAFATH_CHECK_STATUS = "/nafath/api/v1/check_status";
+    public static final String NAFATH_REGISTER_USER = "/nafath/api/v1/register_user";
+    public static final String NAFATH_REGISTER_USER_CHECK_STATUS = "/nafath/api/v1/check_status";
+    public static final String NAFATH_GET_JWT_TOKEN = "/nafath/api/v1/get_jwt_tokens";
     public static final String TOKEN_TYPE_ACCESS = "access_token";
 
     public static final String TOKEN_TYPE_REFRESH = "refresh_token";
@@ -83,6 +88,9 @@ public class ApiConstants {
             }
             case MICROSOFT: {
                 return LoginPrefs.BACKEND_MICROSOFT;
+            }
+            case NAFATH:{
+                return LoginPrefs.BACKEND_NAFATH;
             }
             default: {
                 throw new IllegalArgumentException(authBackend.name());

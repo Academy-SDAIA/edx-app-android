@@ -372,13 +372,13 @@ class AccountFragment : BaseFragment() {
         } ?: run { binding.profileImage.setImageResource(R.drawable.profile_photo_placeholder) }
 
         binding.containerPersonalInfo.visibility = View.VISIBLE
-        binding.containerPersonalInfo.setOnClickListener {
-            trackEvent(
-                Analytics.Events.PERSONAL_INFORMATION_CLICKED,
-                Analytics.Values.PERSONAL_INFORMATION_CLICKED
-            )
-            environment.router.showUserProfileEditor(requireActivity(), loginPrefs.username)
-        }
+//        binding.containerPersonalInfo.setOnClickListener {
+//            trackEvent(
+//                Analytics.Events.PERSONAL_INFORMATION_CLICKED,
+//                Analytics.Values.PERSONAL_INFORMATION_CLICKED
+//            )
+//            environment.router.showUserProfileEditor(requireActivity(), loginPrefs.username)
+//        }
         setVideoQualityDescription(userPrefs.videoQuality)
     }
 
@@ -443,9 +443,9 @@ class AccountFragment : BaseFragment() {
             }
         }
 
-        val isContainerVisible = binding.tvPrivacyPolicy.isVisible()
-                || binding.tvCookiePolicy.isVisible() || binding.tvDataConsentPolicy.isVisible()
-        binding.containerPrivacy.setVisibility(isContainerVisible)
+//        val isContainerVisible = binding.tvPrivacyPolicy.isVisible()
+//                || binding.tvCookiePolicy.isVisible() || binding.tvDataConsentPolicy.isVisible()
+//        binding.containerPrivacy.setVisibility(isContainerVisible)
     }
 
     private fun initViews() {
@@ -473,10 +473,10 @@ class AccountFragment : BaseFragment() {
             }
         }
 
-        binding.appVersion.text = String.format(
-            "%s %s %s", getString(R.string.label_app_version),
-            BuildConfig.VERSION_NAME, config.environmentDisplayName
-        )
+//        binding.appVersion.text = String.format(
+//            "%s %s %s", getString(R.string.label_app_version),
+//            BuildConfig.VERSION_NAME, config.environmentDisplayName
+//        )
     }
 
     private fun updateWifiSwitch() {

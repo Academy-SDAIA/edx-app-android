@@ -6,12 +6,26 @@ import kotlinx.coroutines.withContext
 import org.edx.mobile.authentication.LoginAPI
 import org.edx.mobile.core.EdxEnvironment
 import org.edx.mobile.extenstion.isNotNullOrEmpty
+import org.edx.mobile.http.model.NetworkResponseCallback
+import org.edx.mobile.http.model.Result
 import org.edx.mobile.injection.DataSourceDispatcher
 import org.edx.mobile.model.authentication.AuthResponse
+import org.edx.mobile.model.nafath.NafathCheckStatusModel
+import org.edx.mobile.model.nafath.NafathInitiateRequestModel
+import org.edx.mobile.model.nafath.NafathRegisterUser
+import org.edx.mobile.model.nafath.NafathRegisterUserCheckStatusRequest
+import org.edx.mobile.model.nafath.NafathRegisterUserRequest
 import org.edx.mobile.module.prefs.LoginPrefs
 import org.edx.mobile.social.SocialAuthSource
+import org.json.JSONException
+import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+
 
 @Singleton
 class AuthRepository @Inject constructor(
@@ -29,6 +43,217 @@ class AuthRepository @Inject constructor(
             throw exception
         }
     }
+
+
+    fun InitiateRequest(
+        nafathId: String,
+        callback: NetworkResponseCallback<NafathInitiateRequestModel>
+    ) {
+        loginAPI.initiateReq(nafathId).enqueue(object : Callback<NafathInitiateRequestModel> {
+            override fun onResponse(
+                call: Call<NafathInitiateRequestModel>,
+                response: Response<NafathInitiateRequestModel>
+            ) {
+                if (response.code() == 200) {
+                    if (response.body() != null) {
+                        callback.onSuccess(
+                            Result.Success<NafathInitiateRequestModel>(
+                                isSuccessful = response.isSuccessful,
+                                data = response.body(),
+                                code = response.code(),
+                                message = response.message()
+                            )
+                        )
+                    }
+                } else {
+                    var jsonObject: JSONObject? = null
+                    try {
+                        jsonObject = JSONObject(response.errorBody()!!.string())
+                        val entityId: String = jsonObject.getString("error")
+                        val message = entityId.split(" ").toTypedArray()
+                        callback.onSuccess(
+                        Result.Success<NafathInitiateRequestModel>(
+                            isSuccessful = response.isSuccessful,
+                            data = response.body(),
+                            code = response.code(),
+                            message = message[0]
+                        )
+                    )
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+
+            }
+
+            override fun onFailure(call: Call<NafathInitiateRequestModel>, t: Throwable) {
+                callback.onError(Result.Error(t))
+            }
+        })
+    }
+
+
+    fun checkStatus(
+        map: HashMap<String, String>,
+        callback: NetworkResponseCallback<NafathCheckStatusModel>
+    ) {
+        loginAPI.checkStatus(map).enqueue(object : Callback<NafathCheckStatusModel> {
+            override fun onResponse(
+                call: Call<NafathCheckStatusModel>,
+                response: Response<NafathCheckStatusModel>
+            ) {
+                if (response.code() == 200){
+                    if (response.body() != null) {
+                        callback.onSuccess(
+                            Result.Success<NafathCheckStatusModel>(
+                                isSuccessful = response.isSuccessful,
+                                data = response.body(),
+                                code = response.code(),
+                                message = response.message()
+                            )
+                        )
+                    }
+                }else {
+                    var jsonObject: JSONObject? = null
+                    try {
+                        jsonObject = JSONObject(response.errorBody()!!.string())
+                        val entityId: String = jsonObject.getString("error")
+                        val message = entityId.split(" ").toTypedArray()
+                        callback.onSuccess(
+                            Result.Success<NafathCheckStatusModel>(
+                                isSuccessful = response.isSuccessful,
+                                data = response.body(),
+                                code = response.code(),
+                                message = message[0]
+                            )
+                        )
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+
+            }
+
+            override fun onFailure(call: Call<NafathCheckStatusModel>, t: Throwable) {
+                callback.onError(Result.Error(t))
+            }
+        })
+    }
+
+    fun registerUser(
+        nafathId: NafathRegisterUserRequest,
+        callback: NetworkResponseCallback<NafathRegisterUser>
+    ) {
+        loginAPI.registerUser(nafathId).enqueue(object : Callback<NafathRegisterUser> {
+            override fun onResponse(
+                call: Call<NafathRegisterUser>,
+                response: Response<NafathRegisterUser>
+            ) {
+
+                if (response.code() == 201) {
+                    if (response.body() != null) {
+                        callback.onSuccess(
+                            Result.Success<NafathRegisterUser>(
+                                isSuccessful = response.isSuccessful,
+                                data = response.body(),
+                                code = response.code(),
+                                message = response.message()
+                            )
+                        )
+                    }
+                } else if (response.code() == 400) {
+                    var jsonObject: JSONObject? = null
+                    try {
+                        jsonObject = JSONObject(response.errorBody()!!.string())
+                        val entityId: String = jsonObject.getString("error")
+                        val message = entityId.split(" ").toTypedArray()
+                        callback.onSuccess(
+                            Result.Success<NafathRegisterUser>(
+                                isSuccessful = response.isSuccessful,
+                                data = response.body(),
+                                code = response.code(),
+                                message = message[0]
+                            )
+                        )
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
+            override fun onFailure(call: Call<NafathRegisterUser>, t: Throwable) {
+                callback.onError(Result.Error(t))
+            }
+        })
+    }
+
+
+    fun registerUserCheckStatus(
+        nafathId: NafathRegisterUserCheckStatusRequest,
+        callback: NetworkResponseCallback<NafathCheckStatusModel>
+    ) {
+        loginAPI.registerUserCheckStatus(nafathId)
+            .enqueue(object : Callback<NafathCheckStatusModel> {
+                override fun onResponse(
+                    call: Call<NafathCheckStatusModel>,
+                    response: Response<NafathCheckStatusModel>
+                ) {
+                    if (response.code() == 200){if (response.body() != null) {
+                        callback.onSuccess(
+                            Result.Success<NafathCheckStatusModel>(
+                                isSuccessful = response.isSuccessful,
+                                data = response.body(),
+                                code = response.code(),
+                                message = response.message()
+                            )
+                        )
+                    }}else if(response.code() == 400){
+                        var jsonObject: JSONObject? = null
+                        try {
+                            jsonObject = JSONObject(response.errorBody()!!.string())
+                            val entityId: String = jsonObject.getString("error")
+                            val message = entityId.split(" ").toTypedArray()
+                            callback.onSuccess(
+                                Result.Success<NafathCheckStatusModel>(
+                                    isSuccessful = response.isSuccessful,
+                                    data = response.body(),
+                                    code = response.code(),
+                                    message = message[0]
+                                )
+                            )
+                        } catch (e: JSONException) {
+                            e.printStackTrace()
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        }
+
+                    }
+
+                }
+
+                override fun onFailure(call: Call<NafathCheckStatusModel>, t: Throwable) {
+                    callback.onError(Result.Error(t))
+                }
+            })
+    }
+
+
+    suspend fun loginUsingNafath(
+        map: HashMap<String, String>,
+    ): AuthResponse = withContext(dispatcher) {
+        try {
+            loginAPI.loginUsingNafath(map)
+        } catch (exception: Exception) {
+            throw exception
+        }
+    }
+
 
     suspend fun registerAccount(
         formFields: Bundle,

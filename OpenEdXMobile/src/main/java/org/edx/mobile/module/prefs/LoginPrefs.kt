@@ -148,7 +148,7 @@ class LoginPrefs @Inject constructor(
     }
 
     enum class AuthBackend {
-        PASSWORD, FACEBOOK, GOOGLE, MICROSOFT;
+        PASSWORD, FACEBOOK, GOOGLE, MICROSOFT,NAFATH;
 
         fun value(): String {
             return when (this) {
@@ -156,6 +156,7 @@ class LoginPrefs @Inject constructor(
                 FACEBOOK -> LoginPrefs.FACEBOOK
                 GOOGLE -> LoginPrefs.GOOGLE
                 MICROSOFT -> LoginPrefs.MICROSOFT
+                NAFATH -> LoginPrefs.NAFATH
             }
         }
     }
@@ -165,6 +166,7 @@ class LoginPrefs @Inject constructor(
         private const val FACEBOOK = "Facebook"
         private const val GOOGLE = "Google"
         private const val MICROSOFT = "Microsoft"
+        private const val NAFATH = "Nafath"
 
         private const val PROFILE_JSON = "profile_json"
         private const val AUTH_JSON = "auth_json"
@@ -181,5 +183,6 @@ class LoginPrefs @Inject constructor(
         const val BACKEND_FACEBOOK = "facebook"
         const val BACKEND_GOOGLE = "google-oauth2"
         const val BACKEND_MICROSOFT = "azuread-oauth2"
+        const val BACKEND_NAFATH = "NAFATH-oauth2"
     }
 }

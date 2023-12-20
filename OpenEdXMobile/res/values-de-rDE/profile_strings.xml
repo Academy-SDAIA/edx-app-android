@@ -38,7 +38,7 @@
     <!--  Heading of Privacy Fields  -->
     <string name="label_privacy">Datenschutz</string>
     <!--  Label of Privacy Policy Button  -->
-    <string name="label_privacy_policy">Datenschutzbestimmungen</string>
+    <string name="label_AuthResponse">Datenschutzbestimmungen</string>
     <!--  Label of Cookie Policy Button  -->
     <string name="label_cookie_policy">Cookie-Richtlinie</string>
     <!--  Label of Data Consent Button  -->

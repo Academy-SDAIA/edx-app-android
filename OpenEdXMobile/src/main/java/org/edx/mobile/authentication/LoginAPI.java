@@ -19,6 +19,12 @@ import org.edx.mobile.model.api.ProfileModel;
 import org.edx.mobile.model.api.RegisterResponseFieldError;
 import org.edx.mobile.model.api.UnacknowledgedNoticeResponse;
 import org.edx.mobile.model.authentication.AuthResponse;
+import org.edx.mobile.model.course.ResetCourseDates;
+import org.edx.mobile.model.nafath.NafathInitiateRequestModel;
+import org.edx.mobile.model.nafath.NafathCheckStatusModel;
+import org.edx.mobile.model.nafath.NafathRegisterUser;
+import org.edx.mobile.model.nafath.NafathRegisterUserCheckStatusRequest;
+import org.edx.mobile.model.nafath.NafathRegisterUserRequest;
 import org.edx.mobile.module.analytics.AnalyticsRegistry;
 import org.edx.mobile.module.notification.NotificationDelegate;
 import org.edx.mobile.module.prefs.LoginPrefs;
@@ -99,6 +105,16 @@ public class LoginAPI {
     }
 
     @NonNull
+    public AuthResponse logInUsingNafath(@NonNull String email, @NonNull String password) throws Exception {
+        final Response<AuthResponse> response = getAccessToken(email, password);
+        if (!response.isSuccessful()) {
+            throw new HttpStatusException(response);
+        }
+        finishLogIn(response.body(), LoginPrefs.AuthBackend.PASSWORD, email.trim());
+        return response.body();
+    }
+
+    @NonNull
     public AuthResponse logInUsingFacebook(String accessToken) throws Exception {
         return finishSocialLogIn(accessToken, LoginPrefs.AuthBackend.FACEBOOK);
     }
@@ -112,6 +128,12 @@ public class LoginAPI {
     public AuthResponse logInUsingMicrosoft(String accessToken) throws Exception {
         return finishSocialLogIn(accessToken, LoginPrefs.AuthBackend.MICROSOFT);
     }
+
+//    @NonNull
+//    public void logInUsingNafath(AuthResponse accessToken) throws Exception {
+//
+//         finishLogIn(accessToken, LoginPrefs.AuthBackend.NAFATH,"");
+//    }
 
     @NonNull
     private AuthResponse finishSocialLogIn(@NonNull String accessToken, @NonNull LoginPrefs.AuthBackend authBackend) throws Exception {
@@ -279,5 +301,31 @@ public class LoginAPI {
         public FormFieldMessageBody getFormErrorBody() {
             return formErrorBody;
         }
+    }
+
+
+    public Call<NafathInitiateRequestModel> initiateReq(String nafathId){
+        return loginService.initiateRequest(nafathId);
+    }
+
+    public Call<NafathCheckStatusModel> checkStatus(Map<String, String> parameters){
+        return loginService.checkStatus(parameters);
+    }
+
+    public Call<NafathRegisterUser> registerUser(NafathRegisterUserRequest nafathId){
+        return loginService.registerUser(nafathId);
+    }
+
+    public Call<NafathCheckStatusModel> registerUserCheckStatus(NafathRegisterUserCheckStatusRequest nafathId){
+        return loginService.registerUserCheckStatus(nafathId);
+    }
+
+    public AuthResponse loginUsingNafath(Map<String, String> parameters) throws Exception {
+        final Response<AuthResponse> response = loginService.getJwtToken(parameters).execute();
+        if (!response.isSuccessful()) {
+            throw new HttpStatusException(response);
+        }
+        finishLogIn(response.body(), LoginPrefs.AuthBackend.NAFATH, "");
+        return response.body();
     }
 }

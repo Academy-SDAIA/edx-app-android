@@ -28,14 +28,14 @@
         <item name="alertDialogTheme">@style/AppTheme.Dialog.Alert</item>
         <item name="mediaRouteTheme">@style/MediaRouterTheme</item>
         <item name="castMiniControllerStyle">@style/CastMiniControllerTheme</item>
-        <item name="fontItalic">@font/inter_italic</item>
-        <item name="fontRegular">@font/inter_regular</item>
-        <item name="fontMedium">@font/inter_medium</item>
-        <item name="fontSemiBoldItalic">@font/inter_semi_bold_italic</item>
-        <item name="fontSemiBold">@font/inter_semi_bold</item>
-        <item name="fontBold">@font/inter_bold</item>
-        <item name="fontSecondaryRegular">@font/roboto_mono_regular</item>
-        <item name="fontSecondaryMedium">@font/roboto_mono_medium</item>
+        <item name="fontItalic">@font/ibm_plex_sans_arabic_regular</item>
+        <item name="fontRegular">@font/ibm_plex_sans_arabic_regular</item>
+        <item name="fontMedium">@font/ibm_plex_sans_arabic_medium</item>
+        <item name="fontSemiBoldItalic">@font/ibm_plex_sans_arabic_bold</item>
+        <item name="fontSemiBold">@font/ibm_plex_sans_arabic_semi_bold</item>
+        <item name="fontBold">@font/ibm_plex_sans_arabic_bold</item>
+        <item name="fontSecondaryRegular">@font/ibm_plex_sans_arabic_regular</item>
+        <item name="fontSecondaryMedium">@font/ibm_plex_sans_arabic_medium</item>
         <item name="android:fontFamily">?attr/fontRegular</item>
     </style>
 
@@ -85,7 +85,7 @@
     </style>
 
     <style name="AppTheme.Launch" parent="AppTheme.NoActionBar">
-        <item name="android:windowBackground">@drawable/launch_background</item>
+<!--        <item name="android:windowBackground">@drawable/launch_background</item>-->
     </style>
 
     <style name="AppTheme.NoActionBar">

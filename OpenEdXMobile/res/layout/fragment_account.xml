@@ -167,7 +167,7 @@
                     <de.hdodenhof.circleimageview.CircleImageView
                         android:id="@+id/profile_image"
                         android:layout_width="@dimen/user_profile_mini_image_width"
-                        android:layout_height="@dimen/user_profile_mini_image_height"
+                        android:layout_height="30dp"
                         android:layout_marginStart="@dimen/edx_half_margin"
                         android:background="@drawable/white_circle"
                         android:padding="@dimen/user_profile_mini_image_padding"
@@ -179,6 +179,7 @@
 
                     <androidx.appcompat.widget.AppCompatButton
                         android:id="@+id/btn_view_profile"
+                        android:visibility="gone"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="@dimen/edx_half_margin"

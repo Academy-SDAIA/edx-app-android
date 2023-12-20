@@ -7,6 +7,7 @@
     android:fitsSystemWindows="true">
 
     <include
+        android:visibility="gone"
         layout="@layout/toolbar"
         android:background="@color/neutralWhite" />
 
@@ -19,51 +20,466 @@
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
+            android:layout_marginTop="60dp"
             android:id="@+id/ll_login_form"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="@dimen/edx_default_margin">
-
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/secondaryBaseColor"
+            android:padding="@dimen/edx_default_margin">
             <androidx.appcompat.widget.AppCompatImageView
                 android:id="@+id/login_logo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginBottom="@dimen/edx_default_margin"
                 android:contentDescription="@string/phonetic_app_name"
-                app:srcCompat="@drawable/login_screen_logo" />
+                app:srcCompat="@drawable/nafath_logo" />
+        </LinearLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/usernameWrapper"
-                style="@style/edX.Widget.InputLayout"
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/edx_button_height"
                 android:layout_marginTop="@dimen/edx_default_margin"
-                android:hint="@string/email_username">
+                android:background="@drawable/nafath_btn_un_selector"
+                android:orientation="horizontal">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/email_et"
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btn_nafath"
+                    android:layout_width="@dimen/large_indicator_icon_width"
+                    android:layout_height="@dimen/edx_button_height"
+                    android:background="@drawable/nafath_btn_selector"
+                    android:fontFamily="@font/ibm_plex_sans_arabic_bold"
+                    android:gravity="center"
+                    android:text="Nafath"
+                    android:textColor="@color/secondaryBaseColor"
+                    android:textSize="@dimen/edx_base" />
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:layout_width="@dimen/large_indicator_icon_width"
+                    android:clickable="false"
+                    android:layout_height="@dimen/edx_button_height"
+                    android:background="@drawable/nafath_btn_un_selector"
+                    android:fontFamily="@font/ibm_plex_sans_arabic_bold"
+                    android:gravity="center"
+                    android:text=""
+                    android:textColor="@color/neutralBlack"
+                    android:textSize="@dimen/edx_base" />
+            </LinearLayout>
+
+            <!--Nafath-->
+            <LinearLayout
+                android:id="@+id/ll_nafath"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:hint="Nafath ID">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:maxLength="10" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathPinWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:hint="Nafath Pin">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_pin_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:maxLength="100" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+
+                <LinearLayout
+                    android:id="@+id/nafath_button_layout"
+                    style="@style/edX.Widget.SignInButtonLayout"
+                    android:contentDescription="Nafath"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/nafath_btn_tv"
+                        style="@style/edX.Widget.SignInButton"
+                        android:text="Authenticate with Nafath App" />
+
+                    <include
+                        android:id="@+id/progress_nafath"
+                        layout="@layout/button_progress_indicator" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!--Nafath Registration-->
+
+            <LinearLayout
+                android:id="@+id/ll_nafath_registration"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathFullNameWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:hint="Full name">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_name_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLength="100" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathUserNameWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:nextFocusDown="@+id/nafath_email_et"
+                    android:hint="Public username">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_user_name_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName"
+                        android:nextFocusDown="@+id/nafath_email_et"
+                        android:maxLength="30" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathRegisterEmailWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:hint="Email">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_email_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:maxLength="100" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathRegisterPhoneWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:hint="Phone">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_phone_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="phone"
+                        android:digits="0123456789"
+                        android:maxLength="20" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <androidx.appcompat.widget.AppCompatSpinner
+                    android:id="@+id/nafath_region_spinner"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textEmailAddress"
-                    android:maxLength="100" />
+                    android:layout_height="51dp"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:background="@drawable/nafath_bordered_spinner" />
 
-            </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathCityWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:hint="City">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/passwordWrapper"
-                style="@style/edX.Widget.InputLayout"
-                android:layout_marginTop="@dimen/container_padding"
-                android:hint="@string/password"
-                app:endIconMode="password_toggle">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_city_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLength="100" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/password_et"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathAddressLineWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:hint="Address line (Optional)">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_address_line_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLength="100" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <androidx.appcompat.widget.AppCompatSpinner
+                    android:id="@+id/nafath_education_spinner"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="textPassword"
-                    android:maxLength="100" />
+                    android:layout_height="51dp"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:background="@drawable/nafath_bordered_spinner" />
 
-            </com.google.android.material.textfield.TextInputLayout>
+                <androidx.appcompat.widget.AppCompatSpinner
+                    android:id="@+id/nafath_english_level_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="51dp"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:background="@drawable/nafath_bordered_spinner" />
+
+                <androidx.appcompat.widget.AppCompatSpinner
+                    android:id="@+id/nafath_employment_status_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="51dp"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:background="@drawable/nafath_bordered_spinner" />
+
+                <androidx.appcompat.widget.AppCompatSpinner
+                    android:id="@+id/nafath_experience_spinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="51dp"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:background="@drawable/nafath_bordered_spinner" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathJobTitleWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:hint="Job Title">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_job_title_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:maxLength="100" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <!--Gender & date-->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:contentDescription="Nafath"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:background="@color/white"
+                        android:orientation="horizontal">
+
+                        <RadioGroup
+                            android:id="@+id/lRadioGroup"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:orientation="horizontal">
+
+                            <RadioButton
+                                android:id="@+id/mShopNow"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="@font/ibm_plex_sans_arabic_regular"
+                                android:text="Male"
+                                android:checked="true"
+                                android:textColor="@color/secondaryBaseColor" />
+
+                            <RadioButton
+                                android:id="@+id/mGetNow"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:fontFamily="@font/ibm_plex_sans_arabic_regular"
+                                android:text="Female"
+                                android:textColor="@color/secondaryBaseColor" />
+
+                        </RadioGroup>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/ll_calendar"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="calendarIcon"
+                            app:srcCompat="@drawable/ic_calendar_month" />
+
+                        <TextView
+                            android:id="@+id/tv_calendar"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="5dp"
+                            android:fontFamily="@font/ibm_plex_sans_arabic_regular"
+                            android:text="Date of birth"
+                            android:textColor="@color/black"
+                            android:textSize="14sp" />
+
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="50dp"
+                    android:contentDescription="Nafath"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <CheckBox
+                        android:id="@+id/nafath_checkbox"
+                        android:layout_width="wrap_content"
+                        android:checked="true"
+                        android:layout_height="wrap_content"
+                        android:shadowColor="@color/secondaryBaseColor" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/ibm_plex_sans_arabic_bold"
+                        android:text="i agree to the"
+                        android:singleLine="true"
+                        android:textColor="@color/black"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:singleLine="true"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="@font/ibm_plex_sans_arabic_bold"
+                        android:text=" sdaia terms and conditions policy"
+                        android:textColor="@color/secondaryBaseColor"
+                        android:textSize="13sp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/nafath_button_register_layout"
+                    style="@style/edX.Widget.SignInButtonLayout"
+                    android:contentDescription="Nafath"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/nafath_register_btn_tv"
+                        style="@style/edX.Widget.SignInButton"
+                        android:text="Proceed account creation for free" />
+
+                    <include
+                        android:id="@+id/progress_nafath_creation"
+                        layout="@layout/button_progress_indicator" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!--Activation code UI-->
+            <LinearLayout
+                android:id="@+id/ll_nafath_registration_final"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/nafathActivationCodeWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:hint="Activation Code">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/nafath_activation_code_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:maxLength="100" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <LinearLayout
+                    android:id="@+id/nafath_button_register_final_layout"
+                    style="@style/edX.Widget.SignInButtonLayout"
+                    android:contentDescription="Nafath"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/nafath_register_final_btn_tv"
+                        style="@style/edX.Widget.SignInButton"
+                        android:text="Complete Registration" />
+
+                    <include
+                        android:id="@+id/progress_nafath_creation_final"
+                        layout="@layout/button_progress_indicator" />
+                </LinearLayout>
+            </LinearLayout>
+            <!--edx layout-->
+            <LinearLayout
+                android:id="@+id/ll_edx"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/usernameWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/edx_default_margin"
+                    android:hint="@string/email_username">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/email_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textEmailAddress"
+                        android:maxLength="100" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/passwordWrapper"
+                    style="@style/edX.Widget.InputLayout"
+                    android:layout_marginTop="@dimen/container_padding"
+                    android:hint="@string/password"
+                    app:endIconMode="password_toggle">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/password_et"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPassword"
+                        android:maxLength="100" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
 
             <LinearLayout
                 android:id="@+id/login_button_layout"
