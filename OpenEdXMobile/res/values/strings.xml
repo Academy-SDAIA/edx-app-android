@@ -582,4 +582,86 @@
     <string name="celebration_share_message">I\'m on my way to completing {course_name} online with @{platform_name}online. What are you spending your time learning? #my{platform_name}journey</string>
     <!-- accessibility label for section completion-->
     <string name="course_outline_completion_description">Completed</string>
+
+    <string name="nafath_name">Nafath</string>
+    <string name="nafath_id">Nafath ID</string>
+    <string name="nafath_pin">Nafath Pin</string>
+    <string name="authenticate_with_nafath_app">Authenticate with Nafath App</string>
+    <string name="full_name">Full name</string>
+    <string name="public_username">Public username</string>
+    <string name="email_nafath">Email</string>
+    <string name="phone_nafath">Phone</string>
+    <string name="city_nafath">City</string>
+    <string name="address_line_optional">Address line (Optional)</string>
+    <string name="job_title">Job Title</string>
+    <string name="male_nafath">Male</string>
+    <string name="female_nafath">Female</string>
+    <string name="date_of_birth_nafath">Date of birth</string>
+    <string name="i_agree_to_the">i agree to the </string>
+    <string name="sdaia_terms_and_conditions_policy">SDAIA terms and conditions policy</string>
+    <string name="proceed_account_creation_for_free">Proceed account creation for free</string>
+    <string name="activation_code">Activation Code</string>
+    <string name="complete_registration_nafath">Complete Registration</string>
+
+    <string name="select_region">Select your region</string>
+    <string name="select_region_riyadh">Riyadh</string>
+    <string name="select_region_eastern">Eastern</string>
+    <string name="select_region_asir">Asir</string>
+    <string name="select_region_jazan">Jazan</string>
+    <string name="select_region_medina">Medina</string>
+    <string name="select_region_al_qassim">Al-Qassim</string>
+    <string name="select_region_tabuk">Tabuk</string>
+    <string name="select_region_hail">Ha"'il</string>
+    <string name="select_region_najran">Najran</string>
+    <string name="select_region_aljawf">Al-Jawf</string>
+    <string name="select_region_albahan">Al-Bahah</string>
+    <string name="select_region_north">Northern Borders</string>
+
+    <string name="select_education">Level of Education</string>
+    <string name="select_education_middle">Middle School</string>
+    <string name="select_education_high">High School</string>
+    <string name="select_education_diploma">Diploma</string>
+    <string name="select_education_bachelor">Bachelor</string>
+    <string name="select_education_master">Master</string>
+    <string name="select_education_phd">Ph.D.</string>
+
+
+    <string name="select_english_level">Select your english language level</string>
+    <string name="select_english_level_zero">0</string>
+    <string name="select_english_level_one">1</string>
+    <string name="select_english_level_two">2</string>
+    <string name="select_english_level_three">3</string>
+    <string name="select_english_level_four">4</string>
+    <string name="select_english_level_five">5</string>
+    <string name="select_english_level_six">6</string>
+    <string name="select_english_level_seven">7</string>
+    <string name="select_english_level_eight">8</string>
+    <string name="select_english_level_nine">9</string>
+    <string name="select_english_level_ten">10</string>
+
+    <string name="select_employment_level">Employment Status</string>
+    <string name="select_employment_level_public">Public industry</string>
+    <string name="select_employment_private">Private industry</string>
+    <string name="select_employment_level_job">Job seeker</string>
+    <string name="select_employment_level_student">Student</string>
+
+    <string name="select_work_experience_level">Work Experience Level</string>
+    <string name="select_work_experience_level_zero_two">Junior level (0-2) years</string>
+    <string name="select_work_experience_level_three_four">Middle level (3-4) years</string>
+    <string name="select_work_experience_level_five_ten">Senior level (5-10) years</string>
+    <string name="select_work_experience_level_ten_plus">Expert (+ 10 years)</string>
+
+
+    <string name="nafath_error_full_name">Enter your full name</string>
+    <string name="nafath_error_city">Enter the City Where you live</string>
+    <string name="nafath_error_email">Enter a valid email address</string>
+    <string name="nafath_error_phone">Enter your phone number</string>
+    <string name="nafath_error_date_of_birth">Enter your date of birth</string>
+    <string name="nafath_error_region">Select your Region</string>
+    <string name="nafath_error_education">Select your level of education</string>
+    <string name="nafath_error_employment">Select your employment status</string>
+    <string name="nafath_error_work_experience">Select your work experience level</string>
+    <string name="nafath_error_job_title">Enter your current job title</string>
+    <string name="nafath_error_username">Username must be between 2 and 30 characters</string>
+    <string name="nafath_error_activation_code">Enter the activation code that is sent to you via email</string>
 </resources>

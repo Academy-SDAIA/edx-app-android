@@ -56,7 +56,7 @@
                     android:background="@drawable/nafath_btn_selector"
                     android:fontFamily="@font/ibm_plex_sans_arabic_bold"
                     android:gravity="center"
-                    android:text="Nafath"
+                    android:text="@string/nafath_name"
                     android:textColor="@color/secondaryBaseColor"
                     android:textSize="@dimen/edx_base" />
 
@@ -83,7 +83,7 @@
                     android:id="@+id/nafathWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/edx_default_margin"
-                    android:hint="Nafath ID">
+                    android:hint="@string/nafath_id">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_et"
@@ -98,7 +98,7 @@
                     android:id="@+id/nafathPinWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/container_padding"
-                    android:hint="Nafath Pin">
+                    android:hint="@string/nafath_pin">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_pin_et"
@@ -121,7 +121,7 @@
                     <TextView
                         android:id="@+id/nafath_btn_tv"
                         style="@style/edX.Widget.SignInButton"
-                        android:text="Authenticate with Nafath App" />
+                        android:text="@string/authenticate_with_nafath_app" />
 
                     <include
                         android:id="@+id/progress_nafath"
@@ -141,7 +141,7 @@
                     android:id="@+id/nafathFullNameWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/edx_default_margin"
-                    android:hint="Full name">
+                    android:hint="@string/full_name">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_name_et"
@@ -157,7 +157,7 @@
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/container_padding"
                     android:nextFocusDown="@+id/nafath_email_et"
-                    android:hint="Public username">
+                    android:hint="@string/public_username">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_user_name_et"
@@ -171,7 +171,7 @@
                     android:id="@+id/nafathRegisterEmailWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/edx_default_margin"
-                    android:hint="Email">
+                    android:hint="@string/email_nafath">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_email_et"
@@ -186,7 +186,7 @@
                     android:id="@+id/nafathRegisterPhoneWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/edx_default_margin"
-                    android:hint="Phone">
+                    android:hint="@string/phone_nafath">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_phone_et"
@@ -209,7 +209,7 @@
                     android:id="@+id/nafathCityWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/container_padding"
-                    android:hint="City">
+                    android:hint="@string/city_nafath">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_city_et"
@@ -223,7 +223,7 @@
                     android:id="@+id/nafathAddressLineWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/container_padding"
-                    android:hint="Address line (Optional)">
+                    android:hint="@string/address_line_optional">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_address_line_et"
@@ -265,7 +265,7 @@
                     android:id="@+id/nafathJobTitleWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/container_padding"
-                    android:hint="Job Title">
+                    android:hint="@string/job_title">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_job_title_et"
@@ -297,21 +297,21 @@
                             android:orientation="horizontal">
 
                             <RadioButton
-                                android:id="@+id/mShopNow"
+                                android:id="@+id/nafathRadioMale"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:fontFamily="@font/ibm_plex_sans_arabic_regular"
-                                android:text="Male"
+                                android:text="@string/male_nafath"
                                 android:checked="true"
                                 android:textColor="@color/secondaryBaseColor" />
 
                             <RadioButton
-                                android:id="@+id/mGetNow"
+                                android:id="@+id/nafathRadioFemale"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginStart="10dp"
                                 android:fontFamily="@font/ibm_plex_sans_arabic_regular"
-                                android:text="Female"
+                                android:text="@string/female_nafath"
                                 android:textColor="@color/secondaryBaseColor" />
 
                         </RadioGroup>
@@ -337,7 +337,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginStart="5dp"
                             android:fontFamily="@font/ibm_plex_sans_arabic_regular"
-                            android:text="Date of birth"
+                            android:text="@string/date_of_birth_nafath"
                             android:textColor="@color/black"
                             android:textSize="14sp" />
 
@@ -364,7 +364,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/ibm_plex_sans_arabic_bold"
-                        android:text="i agree to the"
+                        android:text="@string/i_agree_to_the"
                         android:singleLine="true"
                         android:textColor="@color/black"
                         android:textSize="13sp" />
@@ -374,7 +374,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/ibm_plex_sans_arabic_bold"
-                        android:text=" sdaia terms and conditions policy"
+                        android:text="@string/sdaia_terms_and_conditions_policy"
                         android:textColor="@color/secondaryBaseColor"
                         android:textSize="13sp" />
 
@@ -391,7 +391,7 @@
                     <TextView
                         android:id="@+id/nafath_register_btn_tv"
                         style="@style/edX.Widget.SignInButton"
-                        android:text="Proceed account creation for free" />
+                        android:text="@string/proceed_account_creation_for_free" />
 
                     <include
                         android:id="@+id/progress_nafath_creation"
@@ -411,7 +411,7 @@
                     android:id="@+id/nafathActivationCodeWrapper"
                     style="@style/edX.Widget.InputLayout"
                     android:layout_marginTop="@dimen/container_padding"
-                    android:hint="Activation Code">
+                    android:hint="@string/activation_code">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/nafath_activation_code_et"
@@ -432,7 +432,7 @@
                     <TextView
                         android:id="@+id/nafath_register_final_btn_tv"
                         style="@style/edX.Widget.SignInButton"
-                        android:text="Complete Registration" />
+                        android:text="@string/complete_registration_nafath" />
 
                     <include
                         android:id="@+id/progress_nafath_creation_final"

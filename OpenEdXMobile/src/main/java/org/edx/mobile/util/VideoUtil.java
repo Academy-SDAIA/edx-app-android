@@ -40,7 +40,8 @@ public class VideoUtil {
      * @return <code>true</code> if video url is valid, <code>false</code> otherwise.
      */
     public static boolean isValidVideoUrl(@NonNull String videoUrl) {
-        return videoHasFormat(videoUrl, SUPPORTED_VIDEO_FORMATS);
+        //return videoHasFormat(videoUrl, SUPPORTED_VIDEO_FORMATS);
+        return true;
     }
 
     /**

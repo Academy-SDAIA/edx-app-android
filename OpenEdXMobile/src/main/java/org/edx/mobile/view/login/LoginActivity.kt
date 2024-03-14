@@ -44,15 +44,10 @@ import org.edx.mobile.util.AuthUtils
 import org.edx.mobile.util.IntentFactory
 import org.edx.mobile.util.NetworkUtil
 import org.edx.mobile.util.TextUtils
-import org.edx.mobile.util.UtilityFunction.educationList
-import org.edx.mobile.util.UtilityFunction.employmentList
-import org.edx.mobile.util.UtilityFunction.englishLevelList
 import org.edx.mobile.util.UtilityFunction.getEducationKey
 import org.edx.mobile.util.UtilityFunction.getEmployeeKey
 import org.edx.mobile.util.UtilityFunction.getExperienceKey
 import org.edx.mobile.util.UtilityFunction.getReginKey
-import org.edx.mobile.util.UtilityFunction.reginList
-import org.edx.mobile.util.UtilityFunction.workExperienceList
 import org.edx.mobile.util.images.ErrorUtils
 import org.edx.mobile.util.observer.EventObserver
 import org.edx.mobile.util.widget.CustomAlertDialog
@@ -125,7 +120,6 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
             }
         }
 
-        // TODO: Nafath
         binding.forgotPasswordTv.visibility = View.GONE
         binding.nafathPinWrapper.visibility = View.GONE
 
@@ -137,15 +131,24 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
         binding.nafathUserNameEt.filters = arrayOf<InputFilter>(
             InputFilter { src, start, end, dst, dstart, dend ->
                 if (src == "") { return@InputFilter src }
-                if (src.toString().matches("[a-zA-Z0-9_-]+".toRegex())) { src } else ""
+                if (src.toString().matches("[a-zA-Z0-9,أآابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهی,_-]+".toRegex())) { src } else ""
             }
         )
+
+        binding.nafathRadioFemale.setOnClickListener {
+            gender= "f"
+        }
+
+        binding.nafathRadioMale.setOnClickListener {
+            gender="m"
+        }
+
         binding.btnNafath.setOnClickListener {
             binding.llEdx.visibility = View.GONE
             binding.llNafath.visibility = View.VISIBLE
             binding.forgotPasswordTv.visibility = View.GONE
             binding.nafathPinWrapper.visibility = View.GONE
-            binding.loginBtnTv.text = "Authenticate with Nafath App"
+            binding.loginBtnTv.text = resources.getString(R.string.authenticate_with_nafath_app)
 
             binding.btnNafath.background = resources.getDrawable(R.drawable.nafath_btn_selector)
             //  binding.btnEdx.background = resources.getDrawable(R.drawable.nafath_btn_un_selector)
@@ -161,67 +164,42 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
             binding.nafathButtonLayout.visibility=View.VISIBLE
         }
 
-//        binding.btnEdx.setOnClickListener {
-//            binding.llNafath.visibility = View.GONE
-//            binding.llEdx.visibility = View.VISIBLE
-//            binding.loginBtnTv.text = resources.getString(R.string.signing_in)
-//            binding.forgotPasswordTv.visibility = View.VISIBLE
-//
-//            binding.btnNafath.background = resources.getDrawable(R.drawable.nafath_btn_un_selector)
-//            binding.btnEdx.background = resources.getDrawable(R.drawable.nafath_btn_selector)
-//            try {
-//                binding.btnEdx.setTextColor(resources.getColor(R.color.secondaryBaseColor))
-//                binding.btnNafath.setTextColor(resources.getColor(R.color.black))
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
-//            binding.loginButtonLayout.visibility=View.VISIBLE
-//            binding.nafathButtonLayout.visibility=View.GONE
-//            binding.llNafathRegistration.visibility=View.GONE
-//
-//        }
-
-
-
 
         binding.nafathButtonRegisterLayout.setOnClickListener {
 
             if (binding.nafathNameEt.text.isNullOrEmpty()){
-                Toast.makeText(this,"Please Enter Full name ",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_full_name),Toast.LENGTH_SHORT).show()
             }else if(binding.nafathUserNameEt.text.isNullOrEmpty() || binding.nafathUserNameEt.text!!.length<3 ){
-                Toast.makeText(this,"username must be between 3 and 30 character",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_username),Toast.LENGTH_SHORT).show()
             }else if (checkValidation(binding.nafathEmailEt.text.toString().trim())){
-                Toast.makeText(this,"Enter your valid email",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_email),Toast.LENGTH_SHORT).show()
             }else if (binding.nafathPhoneEt.text.isNullOrEmpty()){
-                Toast.makeText(this,"Enter your valid phone number",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_phone),Toast.LENGTH_SHORT).show()
             }else if (regin.isEmpty()){
-                Toast.makeText(this,"Select your region",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_region),Toast.LENGTH_SHORT).show()
             }else if (binding.nafathCityEt.text.isNullOrEmpty()){
-                Toast.makeText(this,"Enter your city where you live",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_city),Toast.LENGTH_SHORT).show()
             }else if (education.isEmpty()){
-                Toast.makeText(this,"Select your level of education",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_education),Toast.LENGTH_SHORT).show()
             }else if(employment.isEmpty()){
-                Toast.makeText(this,"Select your employment status",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_employment),Toast.LENGTH_SHORT).show()
             }else if (experience.isEmpty()){
-                Toast.makeText(this,"Select your work experience level",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_work_experience),Toast.LENGTH_SHORT).show()
             }else if (binding.nafathJobTitleEt.text.isNullOrEmpty()){
-                Toast.makeText(this,"Enter your current job title",Toast.LENGTH_SHORT).show()
-            }else if (gender.isEmpty()){
-
+                Toast.makeText(this,resources.getString(R.string.nafath_error_job_title),Toast.LENGTH_SHORT).show()
             }else if (dataOfBirth.isEmpty()){
-                Toast.makeText(this,"Enter your Date of birth",Toast.LENGTH_SHORT).show()
+                Toast.makeText(this,resources.getString(R.string.nafath_error_date_of_birth),Toast.LENGTH_SHORT).show()
             }else{
                 if (binding.nafathCheckbox.isChecked){
                     authViewModel.registerUser(NafathRegisterUserRequest(binding.nafathEt.text.toString(),transId,"",NafathRegisterUserRequest.User(binding.nafathUserNameEt.text.toString(),binding.nafathEmailEt.text.toString(),"",6)))
                 }
-              //  val maps: HashMap<Any, Any> = hashMapOf("name" to binding.nafathNameEt.text.toString(),"username" to binding.nafathUserNameEt.text.toString(), "email" to binding.nafathEmailEt.text.toString(),"phone_number" to binding.nafathPhoneEt.text.toString(),"gender" to "m","date_of_birth" to dataOfBirth.toString(), "region" to regin.toString(), "city" to binding.nafathCityEt.text.toString(),"address_line" to binding.nafathAddressLineEt.text.toString(), "level_of_education" to education.toString(),"english_language_level" to englishLevel.toString(),"employment_status" to employment.toString(),"work_experience_level" to experience.toString(), "job_title" to binding.nafathJobTitleEt.text.toString(),"activation_code" to "00")
             }
         }
 
         // TODO: Final call for registration
         binding.nafathButtonRegisterFinalLayout.setOnClickListener {
             if (binding.nafathActivationCodeEt.text!!.isNotEmpty()){
-                authViewModel.registerUserCheckStatus(NafathRegisterUserCheckStatusRequest(binding.nafathEt.text.toString(),transId,"true",NafathRegisterUserCheckStatusRequest.User(binding.nafathNameEt.text.toString(),binding.nafathUserNameEt.text.toString(),binding.nafathEmailEt.text.toString(),binding.nafathPhoneEt.text.toString(),"m","",dataOfBirthRequestFormat,regin,binding.nafathCityEt.text.toString(),binding.nafathAddressLineEt.text.toString(),education,englishLevel,employment,experience,binding.nafathJobTitleEt.text.toString(),binding.nafathActivationCodeEt.text.toString(),dataOfBirthYear)))
+                authViewModel.registerUserCheckStatus(NafathRegisterUserCheckStatusRequest(binding.nafathEt.text.toString(),transId,"true",NafathRegisterUserCheckStatusRequest.User(binding.nafathNameEt.text.toString(),binding.nafathUserNameEt.text.toString(),binding.nafathEmailEt.text.toString(),binding.nafathPhoneEt.text.toString(),gender,"",dataOfBirthRequestFormat,regin,binding.nafathCityEt.text.toString(),binding.nafathAddressLineEt.text.toString(),education,englishLevel,employment,experience,binding.nafathJobTitleEt.text.toString(),binding.nafathActivationCodeEt.text.toString(),dataOfBirthYear)))
             }else{
                 Toast.makeText(this,"Please Enter Valid activation code",Toast.LENGTH_SHORT).show()
             }
@@ -265,6 +243,8 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
     private fun registerForm(){
         binding.llNafath.visibility=View.GONE
         binding.llNafathRegistration.visibility=View.VISIBLE
+        val reginList = arrayListOf<String>(resources.getString(R.string.select_region),resources.getString(R.string.select_region_riyadh),resources.getString(R.string.select_region_eastern),resources.getString(R.string.select_region_asir),resources.getString(R.string.select_region_jazan),resources.getString(R.string.select_region_medina),resources.getString(R.string.select_region_al_qassim),resources.getString(R.string.select_region_tabuk),resources.getString(R.string.select_region_hail),resources.getString(R.string.select_region_najran),resources.getString(R.string.select_region_aljawf),resources.getString(R.string.select_region_albahan),resources.getString(R.string.select_region_north))
+
 
         val adapter = ArrayAdapter<String>(this,R.layout.spinner_item,R.id.tv_spinner,reginList)
         adapter.setDropDownViewResource(R.layout.spinner_item)
@@ -277,7 +257,7 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
         }
 
         // TODO: education
-
+        val educationList = arrayListOf<String>(resources.getString(R.string.select_education),resources.getString(R.string.select_education_middle),resources.getString(R.string.select_education_high),resources.getString(R.string.select_education_diploma),resources.getString(R.string.select_education_bachelor),resources.getString(R.string.select_education_master),resources.getString(R.string.select_education_phd))
         val adapterEducation = ArrayAdapter<String>(this,R.layout.spinner_item,R.id.tv_spinner,educationList)
         adapterEducation.setDropDownViewResource(R.layout.spinner_item)
         binding.nafathEducationSpinner.adapter= adapterEducation
@@ -290,7 +270,7 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
         }
 
         // TODO: English
-
+        val englishLevelList = arrayListOf<String>(resources.getString(R.string.select_english_level),resources.getString(R.string.select_english_level_zero),resources.getString(R.string.select_english_level_one),resources.getString(R.string.select_english_level_two),resources.getString(R.string.select_english_level_three),resources.getString(R.string.select_english_level_four),resources.getString(R.string.select_english_level_five),resources.getString(R.string.select_english_level_six),resources.getString(R.string.select_english_level_seven),resources.getString(R.string.select_english_level_eight),resources.getString(R.string.select_english_level_nine),resources.getString(R.string.select_english_level_ten))
         val adapterEnglish = ArrayAdapter<String>(this,R.layout.spinner_item,R.id.tv_spinner,englishLevelList)
         adapterEnglish.setDropDownViewResource(R.layout.spinner_item)
         binding.nafathEnglishLevelSpinner.adapter= adapterEnglish
@@ -304,7 +284,7 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
         }
 
         // TODO: Employment status:
-
+        val employmentList = arrayListOf<String>(resources.getString(R.string.select_employment_level),resources.getString(R.string.select_employment_level_public),resources.getString(R.string.select_employment_private),resources.getString(R.string.select_employment_level_job),resources.getString(R.string.select_employment_level_student))
         val adapterEmployment = ArrayAdapter<String>(this,R.layout.spinner_item,R.id.tv_spinner,employmentList)
         adapterEmployment.setDropDownViewResource(R.layout.spinner_item)
         binding.nafathEmploymentStatusSpinner.adapter= adapterEmployment
@@ -318,6 +298,8 @@ class LoginActivity : BaseFragmentActivity(), MobileLoginCallback {
         }
 
         // TODO: Work Experience
+
+        val workExperienceList = arrayListOf<String>(resources.getString(R.string.select_work_experience_level),resources.getString(R.string.select_work_experience_level_zero_two),resources.getString(R.string.select_work_experience_level_three_four),resources.getString(R.string.select_work_experience_level_five_ten),resources.getString(R.string.select_work_experience_level_ten_plus))
 
         val adapterWorkExperience = ArrayAdapter<String>(this,R.layout.spinner_item,R.id.tv_spinner,workExperienceList)
         adapterWorkExperience.setDropDownViewResource(R.layout.spinner_item)

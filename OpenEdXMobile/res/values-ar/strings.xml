@@ -59,15 +59,15 @@
   <string name="login_failed">رجاء تأكد من أنك تستخدم البريد الإلكتروني أو اسم المستخدم وكلمة السر الصحيحين، وحاول مرة أخرى.</string>
   <!--License Agreement related string on Login and Regiser screens-->
   <!--Create account agreement. Followed by list of agreement names like "End User License Agreement"-->
-  <string name="by_creating_account">يعني إنشاء حساب أنك توافق على {license} و{tos_and_honor_code}، كما يعني موافقتك على تمكين {platform_name} وجميع الأعضاء من معالجة بياناتك الشخصية بموجب {AuthResponse}.</string>
+  <string name="by_creating_account">يعني إنشاء حساب أنك توافق على {license} و{tos_and_honor_code}، كما يعني موافقتك على تمكين {platform_name} وجميع الأعضاء من معالجة بياناتك الشخصية بموجب {privacy_policy}.</string>
   <!--Sign In agreement. Followed by list of agreement names like "End User License Agreement"-->
-  <string name="by_signing_in">يعني تسجيل الدخول إلى هذا التطبيق أنك توافق على {license} و{tos_and_honor_code}، كما يعني موافقتك على تمكين {platform_name} وجميع الأعضاء من معالجة بياناتك الشخصية بموجب {AuthResponse}.</string>
+  <string name="by_signing_in">يعني تسجيل الدخول إلى هذا التطبيق أنك توافق على {license} و{tos_and_honor_code}، كما يعني موافقتك على تمكين {platform_name} وجميع الأعضاء من معالجة بياناتك الشخصية بموجب {privacy_policy}.</string>
   <!--Label for End User License Agreement-->
   <string name="licensing_agreement">اتفاقية ترخيص المستخدم في {platform_name}</string>
   <!--Label for Terms of Service and Honor Code-->
   <string name="tos_and_honor_code">شروط الخدمة وميثاق الشرف الأكاديمي الخاصين بمنصّة {platform_name} </string>
   <!--Label for Privacy Policy-->
-  <string name="AuthResponse">سياسة الخصوصية</string>
+  <string name="privacy_policy">سياسة الخصوصية</string>
   <string name="login_title">تسجيل الدخول</string>
   <!--Accessible content description of close button on Sign in and Sign up screen-->
   <string name="close">إغلاق</string>
@@ -551,4 +551,85 @@
   <string name="celebration_share_message">أنا في طريقي لإكمال {course_name} عبر الإنترنت باستخدام @ {platform_name} عبر الإنترنت. ماذا تقضي وقتك في التعلم؟ #my {platform_name}</string>
   <!--accessibility label for section completion-->
   <string name="course_outline_completion_description">منجز</string>
+
+
+  <string name="nafath_name">نفاذ</string>
+  <string name="nafath_id">رقم الهوية في نفاذ</string>
+  <string name="nafath_pin">نفاذ</string>
+  <string name="authenticate_with_nafath_app">المصادقة عبر تطبيق نفاذ</string>
+  <string name="full_name">الاسم الكامل</string>
+  <string name="public_username">اسم المستخدم العامّ</string>
+  <string name="email_nafath">البريد الإلكتروني</string>
+  <string name="phone_nafath">رقم الجوال</string>
+  <string name="city_nafath">مدينة</string>
+  <string name="address_line_optional">خط عنوان (اختياري)</string>
+  <string name="job_title">مسمى وظيفي</string>
+  <string name="male_nafath">ذكر</string>
+  <string name="female_nafath">أنثى</string>
+  <string name="date_of_birth_nafath">تاريخ الميلاد</string>
+  <string name="i_agree_to_the">أوافق على </string>
+  <string name="sdaia_terms_and_conditions_policy">سدايا شروط الخدمة </string>
+  <string name="proceed_account_creation_for_free">متابعة إنشاء حساب مجاني</string>
+  <string name="activation_code">إلى بريدك الإلكتروني</string>
+  <string name="complete_registration_nafath">تم إكمال عملية التسجيل</string>
+  <string name="select_region">حدد منطقتك </string>
+  <string name="select_region_riyadh">الرياض</string>
+  <string name="select_region_eastern"> المنطقة الشرقية</string>
+  <string name="select_region_asir">عسير</string>
+  <string name="select_region_jazan">جازان</string>
+  <string name="select_region_medina">المدينة المنورة</string>
+  <string name="select_region_al_qassim">القصيم</string>
+  <string name="select_region_tabuk">تبوك</string>
+  <string name="select_region_hail">حائل</string>
+  <string name="select_region_najran">نجران</string>
+  <string name="select_region_aljawf">الجوف</string>
+  <string name="select_region_albahan">الباحة</string>
+  <string name="select_region_north">الحدود الشمالية</string>
+
+  <string name="select_education">المستوى التعليمي</string>
+  <string name="select_education_middle"> المرحلة المتوسطة</string>
+  <string name="select_education_high">المرحلة الثانوية</string>
+  <string name="select_education_diploma">دبلوم</string>
+  <string name="select_education_bachelor">بكالوريوس</string>
+  <string name="select_education_master">ماجستير</string>
+  <string name="select_education_phd">دكتوراة</string>
+
+  <string name="select_english_level">المستوى التعليمي</string>
+  <string name="select_english_level_zero">0</string>
+  <string name="select_english_level_one">1</string>
+  <string name="select_english_level_two">2</string>
+  <string name="select_english_level_three">3</string>
+  <string name="select_english_level_four">4</string>
+  <string name="select_english_level_five">5</string>
+  <string name="select_english_level_six">6</string>
+  <string name="select_english_level_seven">7</string>
+  <string name="select_english_level_eight">8</string>
+  <string name="select_english_level_nine">9</string>
+  <string name="select_english_level_ten">10</string>
+
+  <string name="select_employment_level">الحالة الوظيفية</string>
+  <string name="select_employment_level_public">قطاع عام</string>
+  <string name="select_employment_private">قطاع خاص</string>
+  <string name="select_employment_level_job"> باحث عن عمل</string>
+  <string name="select_employment_level_student">طالب</string>
+
+  <string name="select_work_experience_level">مستوى الخبرة العملية</string>
+  <string name="select_work_experience_level_zero_two">المستوى المبتدئ (2-0) سنوات</string>
+  <string name="select_work_experience_level_three_four">المستوى المتوسط (4-3) سنوات</string>
+  <string name="select_work_experience_level_five_ten">المستوى المتقدم (10-5) سنوات</string>
+  <string name="select_work_experience_level_ten_plus">خبير (أكثر من  10+) سنوات</string>
+
+
+  <string name="nafath_error_full_name">أدخل اسمك الكامل</string>
+  <string name="nafath_error_city">أدخل مدينة إقامتك</string>
+  <string name="nafath_error_email">أدخل عنوان بريد إلكتروني صحيح</string>
+  <string name="nafath_error_phone">أدخل رقم هاتفك</string>
+  <string name="nafath_error_date_of_birth">أدخل يوم ميلادك</string>
+  <string name="nafath_error_region">حدد منطقتك</string>
+  <string name="nafath_error_education">حدد مستواك التعليمي</string>
+  <string name="nafath_error_employment">حدد حالتك الوظيفية</string>
+  <string name="nafath_error_work_experience">حدد مستوى خبرتك العملية</string>
+  <string name="nafath_error_job_title">أدخل المسمى الوظيفي الحالي لك</string>
+  <string name="nafath_error_username">يجب أن يتكون اسم المستخدم من 2 إلى 30 حرفًا</string>
+  <string name="nafath_error_activation_code">أدخل رمز التفعيل المرسل إلى بريك الإلكتروني</string>
 </resources>
