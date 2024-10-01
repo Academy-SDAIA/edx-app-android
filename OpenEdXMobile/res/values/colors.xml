@@ -11,7 +11,7 @@
     <color name="primaryLightColor">#0E3639</color>
     <!--  Primary 500 | Dark 500 | Elm  -->
 <!--    <color name="primaryBaseColor">#00262B</color>-->
-    <color name="primaryBaseColor">#EA6852</color>
+    <color name="primaryBaseColor">#00C1DE</color>
     <!--  Primary 700 | Dark 700  -->
     <color name="primaryDarkColor">#002121</color>
     <!--  Primary 700 | Dark 700, Opacity 30  -->

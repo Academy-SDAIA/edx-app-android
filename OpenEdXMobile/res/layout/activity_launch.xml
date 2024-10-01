@@ -13,7 +13,9 @@
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/edx_logo"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_height="120dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
             android:layout_marginTop="250dp"
             android:layout_centerHorizontal="true"
             android:contentDescription="@string/phonetic_app_name"
